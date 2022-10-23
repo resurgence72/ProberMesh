@@ -88,7 +88,6 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 	}
 
 	go func() {
-		// wg.wait() 放在 wg.add 后
 		wg.Wait()
 		close(ptsChan)
 		tm.currents = nil
