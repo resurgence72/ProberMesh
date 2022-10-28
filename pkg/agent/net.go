@@ -3,11 +3,13 @@ package agent
 import (
 	"context"
 	"net"
+	"os"
 	"os/exec"
 	"time"
 )
 
 const (
+	defaultRegionEnv = "PROBER_REGION"
 	defaultRegion    = "cn-shanghai"
 	defaultRegionCmd = "curl -s http://100.100.100.200/latest/meta-data/region-id"
 )
@@ -38,7 +40,18 @@ func getLocalIP() string {
 	return "0.0.0.0"
 }
 
-func getSelfRegion() string {
+func getSelfRegion(dr string) string {
+	// 1. 如果flag指定了region,使用指定
+	if len(dr) > 0 {
+		return dr
+	}
+
+	// 2. 未指定region, 获取env
+	if region, ok := os.LookupEnv(defaultRegionEnv); ok && len(region) > 0 {
+		return region
+	}
+
+	// 3. env没有 使用curl
 	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(2)*time.Second)
 	cmd := exec.CommandContext(
 		ctx,
@@ -49,6 +62,7 @@ func getSelfRegion() string {
 
 	bs, err := cmd.CombinedOutput()
 	if err != nil {
+		// 4. curl不到，使用默认 cn-shanghai
 		return defaultRegion
 	}
 	return string(bs)

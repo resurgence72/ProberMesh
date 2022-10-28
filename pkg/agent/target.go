@@ -39,13 +39,7 @@ func NewTargetManager(
 		beforeReady:     br,
 	}
 
-	// 如果指定了region,使用指定
-	// 未指定region,自动获取
-	if len(region) > 0 {
-		tm.selfRegion = region
-	} else {
-		tm.selfRegion = getSelfRegion()
-	}
+	tm.selfRegion = getSelfRegion(region)
 	return tm
 }
 
