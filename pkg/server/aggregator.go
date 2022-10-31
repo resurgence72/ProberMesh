@@ -48,7 +48,7 @@ func (a *Aggregator) Enqueue(reqs []*pb.PorberResultReq) {
 }
 
 func (a *Aggregator) startAggregation() {
-	util.Wait(a.cancel,a.aggInterval, a.agg)
+	util.Wait(a.cancel, a.aggInterval, a.agg)
 }
 
 func (a *Aggregator) agg() {
@@ -126,12 +126,10 @@ func (a *Aggregator) agg() {
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for _, agg := range http {
-		if agg.failedCnt > 0 {
-			httpProberFailedGaugeVec.WithLabelValues(
-				agg.sourceRegion,
-				agg.targetAddr,
-			).Set(float64(agg.failedCnt))
-		}
+		httpProberFailedGaugeVec.WithLabelValues(
+			agg.sourceRegion,
+			agg.targetAddr,
+		).Set(float64(agg.failedCnt))
 
 		for stage, total := range agg.phase {
 			// 每个 sR->tR 的每个stage的平均
@@ -146,13 +144,11 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 	for _, agg := range icmp {
-		// 当前 r to r 存在探测失败任务
-		if agg.failedCnt > 0 {
-			icmpProberFailedGaugeVec.WithLabelValues(
-				agg.sourceRegion,
-				agg.targetRegion,
-			).Set(float64(agg.failedCnt))
-		}
+		// 当前 r to r 存在探测失败任务,记录失败次数；没有失败的，打点0
+		icmpProberFailedGaugeVec.WithLabelValues(
+			agg.sourceRegion,
+			agg.targetRegion,
+		).Set(float64(agg.failedCnt))
 
 		var icmpDurationsTotal float64
 		for stage, total := range agg.phase {

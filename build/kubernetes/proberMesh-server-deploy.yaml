@@ -76,19 +76,28 @@ data:
 apiVersion: v1
 kind: Service
 metadata:
-  name: probermesh-svc
+  name: probermesh-svc-rpc
   namespace: ops-sre
 spec:
   type: ClusterIP
   ports:
-    # 集群内访问端口 clusterIP:port
-    # 仅用于集群内部访问，外部无法访问
-    - port: 80
-      name: metric
-      # 容器内部端口
-      targetPort: 6001
     - port: 6000
       name: rpc
       targetPort: 6000
+  selector:
+    name: probermesh-server-deploy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: probermesh-svc-http
+  namespace: ops-sre
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6001
+      name: metric
+      # 容器内部端口
+      targetPort: 6001
   selector:
     name: probermesh-server-deploy
