@@ -88,9 +88,15 @@ prober_configs:
 # server 端使用
 ./proberMesh
 
+
 # agent 端使用
 ./proberMesh -mode agent -agent.region ali-cn-shanghai -server.rpc.addr localhost:6000
 
+PS: region参数优先级
+1. 命令行 -agent.region
+2. 环境变量 PROBER_REGION
+3. 代码curl云厂商region接口(仅支持aliyun)
+4. 使用默认region cn-shanghai
 
 其余参数可根据需要自定义调整
 
