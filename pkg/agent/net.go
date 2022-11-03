@@ -2,16 +2,18 @@ package agent
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
 const (
 	defaultRegionEnv = "PROBER_REGION"
 	defaultRegion    = "cn-shanghai"
-	defaultRegionCmd = "curl -s http://100.100.100.200/latest/meta-data/region-id"
+	regionTimeout    = time.Duration(300) * time.Millisecond
 )
 
 func getLocalIP() string {
@@ -52,18 +54,48 @@ func getSelfRegion(dr string) string {
 	}
 
 	// 3. env没有 使用curl
-	ctx, _ := context.WithTimeout(context.TODO(), time.Duration(2)*time.Second)
-	cmd := exec.CommandContext(
-		ctx,
-		"bash",
-		"-c",
-		defaultRegionCmd,
+	var (
+		aliCloudRegion    = "http://100.100.100.200/latest/meta-data/region-id"
+		tencentRegion     = "http://metadata.tencentyun.com/latest/meta-data/placement/zone"
+		googleCloudRegion = "http://metadata.google.internal/computeMetadata/v1/instance/zone"
 	)
 
-	bs, err := cmd.CombinedOutput()
-	if err != nil {
-		// 4. curl不到，使用默认 cn-shanghai
-		return defaultRegion
+	f := func(r string) (string, error) {
+		ctx, _ := context.WithTimeout(context.TODO(), regionTimeout)
+		cmd := exec.CommandContext(
+			ctx,
+			"bash",
+			"-c",
+			fmt.Sprintf("curl -s %s", r),
+		)
+
+		bs, err := cmd.CombinedOutput()
+		return string(bs), err
 	}
-	return string(bs)
+
+	pipeLines := []func() (string, error){
+		func() (string, error) {
+			return f(aliCloudRegion)
+		},
+		func() (string, error) {
+			return f(tencentRegion)
+		},
+		func() (string, error) {
+			region, err := f(googleCloudRegion)
+			if err == nil && len(region) > 0 {
+				ss := strings.Split(region, "/")
+				region = ss[len(ss)-1]
+			}
+			return region, err
+		},
+	}
+
+	for _, fn := range pipeLines {
+		if region, err := fn(); err == nil {
+			return region
+		}
+	}
+
+	// 4. curl不到，使用默认 cn-shanghai
+	return defaultRegion
 }
