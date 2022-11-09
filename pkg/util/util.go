@@ -15,16 +15,12 @@ func SetJitter() int {
 }
 
 func Wait(ctx context.Context, interval time.Duration, f func()) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	f()
 	for {
+		f()
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			f()
+		case <-time.After(interval):
 		}
 	}
 }
