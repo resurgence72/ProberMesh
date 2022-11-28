@@ -61,7 +61,7 @@ var (
 		Namespace: namespace,
 		Name:      "agent_is_alive",
 		Help:      "proberMesh agent is alive",
-	}, []string{"region", "ip"})
+	}, []string{"region", "ip", "version"})
 )
 
 func init() {

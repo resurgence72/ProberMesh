@@ -6,10 +6,12 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"probermesh/pkg/util"
+	"time"
 )
 
 type ProberMeshAgentOption struct {
 	Addr, PInterval, SInterval, Region string
+	Upgrade                            bool
 }
 
 func BuildAgentMode(ao *ProberMeshAgentOption) {
@@ -61,6 +63,22 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 		}, func(e error) {
 			cancelAll()
 		})
+	}
+
+	{
+		if ao.Upgrade {
+			// upgrade
+			g.Add(func() error {
+				util.Wait(
+					ctxAll,
+					30*time.Second,
+					newUpgradeChecker(cli).startUpgradeCheck,
+				)
+				return nil
+			}, func(e error) {
+				cancelAll()
+			})
+		}
 	}
 
 	g.Run()

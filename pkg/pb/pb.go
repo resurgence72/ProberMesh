@@ -3,8 +3,9 @@ package pb
 import "probermesh/config"
 
 type ReportReq struct {
-	IP     string `json:"ip"`
-	Region string `json:"region"`
+	IP      string `json:"ip"`
+	Region  string `json:"region"`
+	Version string `json:"version"`
 }
 
 type TargetPoolReq struct {
@@ -41,4 +42,14 @@ type PorberResultReq struct {
 	HTTPDurations map[string]float64
 }
 
+type UpgradeCheckReq string
 
+func (u UpgradeCheckReq) String() string {
+	return string(u)
+}
+
+type UpgradeResp struct {
+	Upgraded bool `json:"upgraded"`
+	Md5Check    string `json:"md5Check"`
+	DownloadURL string `json:"downloadURL"`
+}

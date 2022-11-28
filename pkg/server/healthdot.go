@@ -31,10 +31,10 @@ func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{
 	return hd
 }
 
-func (h *healthDot) report(region, ip string) {
+func (h *healthDot) report(region, ip, version string) {
 	h.m.Lock()
 	defer h.m.Unlock()
-	h.agentPool[region+defaultKeySeparator+ip] = time.Now()
+	h.agentPool[region+defaultKeySeparator+ip+defaultKeySeparator+version] = time.Now()
 
 	// 将上报的agent region和ip存入
 	if ipm, ok := h.discoverPool[region]; ok {
@@ -51,25 +51,28 @@ func (h *healthDot) report(region, ip string) {
 }
 
 func (h *healthDot) dot() {
-	util.Wait(h.cancel,h.expires, func() {
+	util.Wait(h.cancel, h.expires, func() {
 		now := time.Now()
 		for agent, tm := range h.agentPool {
 			meta := strings.Split(agent, defaultKeySeparator)
-			region, ip := meta[0], meta[1]
+			region, ip, version := meta[0], meta[1], meta[2]
 			if now.Sub(tm) > h.expires {
-				agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(0)
+				agentHealthCheckGaugeVec.WithLabelValues(region, ip, version).Set(0)
 
 				h.m.Lock()
 				delete(h.agentPool, agent)
 				delete(h.discoverPool[region], ip)
 				h.m.Unlock()
 			} else {
-				agentHealthCheckGaugeVec.WithLabelValues(region, ip).Set(1)
+				agentHealthCheckGaugeVec.WithLabelValues(region, ip, version).Set(1)
 			}
 		}
 	})
 }
 
 func getDiscoverPool() map[string]map[string]struct{} {
+	if hd == nil {
+		return map[string]map[string]struct{}{}
+	}
 	return hd.discoverPool
 }

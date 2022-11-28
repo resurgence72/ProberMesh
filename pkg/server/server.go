@@ -92,7 +92,7 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		// http server
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
-		mux.HandleFunc("/upgrade", upgrade())
+		mux.HandleFunc("/upgrade", update())
 		svc := http.Server{
 			Addr:    so.HTTPListenAddr,
 			Handler: mux,

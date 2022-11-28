@@ -32,13 +32,14 @@ func newHealthCheck(ctx context.Context, r *rpcCli, ready chan struct{}) *health
 }
 
 func (h *healthCheck) report() {
-	util.Wait(h.cancel,healthCheckInterval, func() {
+	util.Wait(h.cancel, healthCheckInterval, func() {
 		var msg string
 		err := h.r.Call(
 			"Server.Report",
 			pb.ReportReq{
-				IP:     h.selfAddr,
-				Region: h.selfRegion,
+				IP:      h.selfAddr,
+				Region:  h.selfRegion,
+				Version: util.GetVersion(),
 			},
 			&msg,
 		)

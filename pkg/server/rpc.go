@@ -8,25 +8,43 @@ import (
 	"net"
 	"net/rpc"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/upgrade"
 	"reflect"
 	"time"
 )
 
 type Server struct{}
 
+// agent 健康检查上报
 func (s *Server) Report(req pb.ReportReq, resp *string) error {
-	hd.report(req.Region, req.IP)
+	hd.report(req.Region, req.IP,req.Version)
 	return nil
 }
 
+// agent 获取target pool
 func (s *Server) GetTargetPool(req pb.TargetPoolReq, resp *pb.TargetPoolResp) error {
 	tcs := tp.getPool(req.SourceRegion)
 	resp.Targets = tcs
 	return nil
 }
 
+// agent 上报探测结果
 func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) error {
 	aggregator.Enqueue(reqs)
+	return nil
+}
+
+// agent 获取更新接口
+func (s *Server) GetSelfUpgrade(version pb.UpgradeCheckReq, resp *pb.UpgradeResp) error {
+	u := upgrade.GetSelfUpgrade()
+	if !u.CheckVersion(u.Version, version.String()) {
+		// 新版本<=当前版本
+		return nil
+	}
+
+	resp.Upgraded = true
+	resp.DownloadURL = u.DownloadURL
+	resp.Md5Check = u.Md5Check
 	return nil
 }
 
