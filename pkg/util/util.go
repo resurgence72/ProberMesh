@@ -2,7 +2,10 @@ package util
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"math/rand"
+	"probermesh/pkg/version"
 	"time"
 )
 
@@ -27,4 +30,13 @@ func Wait(ctx context.Context, interval time.Duration, f func()) {
 			f()
 		}
 	}
+}
+
+func GetVersion() string {
+	return version.Version
+}
+
+func GetMd5(s string) string {
+	sum := md5.Sum([]byte(s))
+	return hex.EncodeToString(sum[:])
 }
