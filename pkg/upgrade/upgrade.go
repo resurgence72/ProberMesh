@@ -3,6 +3,7 @@ package upgrade
 import (
 	"errors"
 	"github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -60,6 +61,7 @@ func Upgrade(u, m string) error {
 
 	// 校验二进制的md5
 	if strings.Compare(util.GetMd5(string(bs)), m) != 0 {
+		io.Copy(ioutil.Discard, resp.Body)
 		return errors.New("upgrade md5Check failed")
 	}
 

@@ -42,12 +42,15 @@ cd ProberMesh/cmd/proberMesh && go build -o proberMesh .
 
 # 项目运行
 ./proberMesh -h
+Usage of ./probermesh:
   -agent.probe.interval string
         agent端探测周期 (default "15s")
   -agent.region string
-        agent端所属域;默认为region(自动获取regionID)
+        agent端所属域;默认为region(自动获取regionID) (default "cn-shanghai")
   -agent.sync.interval string
         agent端同步targets周期 (default "1m")
+  -agent.upgrade
+        agent端是否开启自升级功能,默认关闭
   -h    帮助信息
   -mode string
         服务模式(agent/server) (default "server")
@@ -110,8 +113,6 @@ http参数仅支持配置文件指定
 
 #### Prometheus 端配置拉取
 ```shell script
-global:
-  scrape_interval: 15s
 scrape_configs:
   - job_name: "prober_mesh"
     static_configs:
@@ -120,4 +121,45 @@ scrape_configs:
       - source_labels: ["__name__"]
         regex: "^prober.*"
         action: 'keep'
+```
+
+
+#### Agent 节点自升级
+##### 1. 需求及实现
+```text
+proberMesh 部署后存在一种场景，我们需要对 agent 角色节点进行升级或bugfix；通用的大批量agent升级操作方式无非如下几种
+1. 手动人工替换二进制 restart
+   弊端：操作繁琐,节点多了后需要耗费大量时间
+2. ansible 自动化批量执行
+   弊端: 节点多了后ssh执行效率很低
+3. 基于 kubernetes 环境做 Deployment upgrade
+   弊端: proberMesh 大部分场景是部署在同内网的多region, 或者不同内网的region通过公网通讯；使用k8s托管成本太高
+4. self upgrade节点自升级
+   弊端: 代码层面适配，大规模节点下升级有可能把管理机带宽打满(proberMesh主要多对多拨测，节点数量不会很大，打满问题不太会发生)
+
+
+当前使用方法4实现了自升级，这种实现方式有个前提: agent 节点需要使用守护进程托管，例如 supervisord; 
+
+升级流程： 管理机向 server 端 http://${server_http_addr}/upgrade 发送 POST 升级请求：
+{
+"downloadURL": "http://172.18.12.38:9999/probermesh",
+"md5Check": "0a85983226d91029bcf5701f94d18753",
+"version": "0.0.1",
+"force": false,
+}
+downloadURL 标识agent新版本二进制的下载地址，这里要注意，二进制名称要和原本一直，否则守护进程会restart失败;
+md5Check 标识agent新版本的md5，agent需要和下载的二进制做md5校验，校验成功才会替换升级;
+version 标识新版本的version;
+force 标识是否强制升级; false情况下，agent只校验version > 本身的升级请求；true情况下，agent跳过version check,其实也就是支持回滚;
+
+agent 定时向server端获取upgrade信息，拿到后check成功会在本地下载并替换二进制并且 kill self, 后续再被守护进程拉起时即是新版本；升级期间建议通过 agent_is_alive{version="0.0.1"} 指标监控升级情况；
+```
+##### 2. 存在的问题
+```text
+如果做灰度或做并发控制？ 这种需求通常存在于 agent 节点规模很大的场景
+1. 需要一批批替换，例如两千个agent, 100台100台的升级；
+2. 管理机存在其他业务，需要限制带宽被打满
+
+由于proberMesh暂时无此需求，我这里提供一个思路，后续有需求时再实现：
+通过redis分布式锁控制set升级队列
 ```
