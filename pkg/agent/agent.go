@@ -10,13 +10,23 @@ import (
 )
 
 type ProberMeshAgentOption struct {
-	Addr, PInterval, SInterval, Region string
-	Upgrade                            bool
+	Addr,
+	PInterval,
+	SInterval,
+	NetworkType,
+	Region string
+	Upgrade bool
 }
 
 func BuildAgentMode(ao *ProberMeshAgentOption) {
 	if len(ao.Addr) == 0 {
 		log.Fatal("server addr must be set")
+	}
+
+	switch ao.NetworkType {
+	case intranetNetType, publicNetType:
+	default:
+		log.Fatal("agent network type must one of intranet or public")
 	}
 
 	pDuration, err := util.ParseDuration(ao.PInterval)

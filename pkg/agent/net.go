@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"os/exec"
@@ -16,7 +17,19 @@ const (
 	regionTimeout    = time.Duration(300) * time.Millisecond
 )
 
-func getLocalIP() string {
+const (
+	intranetNetType = "intranet"
+	publicNetType   = "public"
+)
+
+func getLocalIP(networkType string) string {
+	if networkType == intranetNetType {
+		return getIntranetIP()
+	}
+	return getPublicIP()
+}
+
+func getIntranetIP() string {
 	var (
 		addrs   []net.Addr
 		addr    net.Addr
@@ -40,6 +53,22 @@ func getLocalIP() string {
 		}
 	}
 	return "0.0.0.0"
+}
+
+func getPublicIP() string {
+	ctx, _ := context.WithTimeout(context.TODO(), regionTimeout)
+	cmd := exec.CommandContext(
+		ctx,
+		"bash",
+		"-c",
+		"curl -s ifconfig.me",
+	)
+	bs, err := cmd.CombinedOutput()
+	if err != nil {
+		logrus.Errorln("agent get public ip failed", err)
+		return getIntranetIP()
+	}
+	return string(bs)
 }
 
 func getSelfRegion(dr string) string {
