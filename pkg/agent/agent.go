@@ -28,6 +28,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	default:
 		log.Fatal("agent network type must one of intranet or public")
 	}
+	initAgentLocalIP(ao.NetworkType)
 
 	pDuration, err := util.ParseDuration(ao.PInterval)
 	if err != nil {

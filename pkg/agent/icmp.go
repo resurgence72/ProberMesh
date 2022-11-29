@@ -382,7 +382,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			SourceRegion:  sourceRegion,
 			TargetRegion:  targetRegion,
 			ProberTarget:  target,
-			LocalIP:       getLocalIP(),
+			LocalIP:       agentIP,
 		}
 		pinger = ping.New(target)
 	)
@@ -393,7 +393,7 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	pinger.SetNetwork("ip")
 	pinger.Size = defaultICMPSize
 	pinger.Count = defaultICMPCount
-	pinger.Timeout = time.Duration(math.Ceil(tm.refreshInterval.Seconds() * 8 / 10)) * time.Second
+	pinger.Timeout = time.Duration(math.Ceil(tm.refreshInterval.Seconds()*8/10)) * time.Second
 	pinger.SetPrivileged(true)
 
 	nslookup := time.Now()

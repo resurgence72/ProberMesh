@@ -78,7 +78,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		defaultHTTPPorberResultReq = &pb.PorberResultReq{
 			ProberType:    "http",
 			ProberTarget:  target,
-			LocalIP:       getLocalIP(),
+			LocalIP:       agentIP,
 			SourceRegion:  sourceRegion,
 			TargetRegion:  targetRegion,
 			HTTPDurations: make(map[string]float64),

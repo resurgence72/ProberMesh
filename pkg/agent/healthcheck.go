@@ -25,7 +25,7 @@ func newHealthCheck(ctx context.Context, r *rpcCli, ready chan struct{}) *health
 	return &healthCheck{
 		r:          r,
 		selfRegion: tm.selfRegion,
-		selfAddr:   getLocalIP(),
+		selfAddr:   agentIP,
 		cancel:     ctx,
 		ready:      ready,
 	}

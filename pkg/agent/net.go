@@ -14,7 +14,7 @@ import (
 const (
 	defaultRegionEnv = "PROBER_REGION"
 	defaultRegion    = "cn-shanghai"
-	regionTimeout    = time.Duration(300) * time.Millisecond
+	regionTimeout    = time.Duration(3) * time.Second
 )
 
 const (
@@ -22,11 +22,13 @@ const (
 	publicNetType   = "public"
 )
 
-func getLocalIP(networkType string) string {
+var agentIP string
+
+func initAgentLocalIP(networkType string) {
 	if networkType == intranetNetType {
-		return getIntranetIP()
+		agentIP = getIntranetIP()
 	}
-	return getPublicIP()
+	agentIP = getPublicIP()
 }
 
 func getIntranetIP() string {
