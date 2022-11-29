@@ -17,7 +17,7 @@ type Server struct{}
 
 // agent 健康检查上报
 func (s *Server) Report(req pb.ReportReq, resp *string) error {
-	hd.report(req.Region, req.IP,req.Version)
+	hd.report(req.Region, req.IP, req.Version)
 	return nil
 }
 
@@ -37,14 +37,20 @@ func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) er
 // agent 获取更新接口
 func (s *Server) GetSelfUpgrade(version pb.UpgradeCheckReq, resp *pb.UpgradeResp) error {
 	u := upgrade.GetSelfUpgrade()
-	if !u.CheckVersion(u.Version, version.String()) {
-		// 新版本<=当前版本
-		return nil
+
+	if !u.Force {
+		// 如果强制更新，跳过version的校验 回退
+		if !u.CheckVersion(u.Version, version.String()) {
+			// 新版本<=当前版本
+			return nil
+		}
 	}
 
-	resp.Upgraded = true
-	resp.DownloadURL = u.DownloadURL
-	resp.Md5Check = u.Md5Check
+	resp = &pb.UpgradeResp{
+		Upgraded:    true,
+		Md5Check:    u.Md5Check,
+		DownloadURL: u.DownloadURL,
+	}
 	return nil
 }
 

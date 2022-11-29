@@ -8,6 +8,7 @@ import (
 	"os"
 	"probermesh/pkg/util"
 	"strings"
+	"sync"
 	"syscall"
 )
 
@@ -20,11 +21,17 @@ type SelfUpgrade struct {
 	Md5Check    string `json:"md5Check"`
 	Version     string `json:"version"`
 	DownloadURL string `json:"downloadURL"`
+
+	Force bool `json:"force"`
+
+	m sync.Mutex
 }
 
 var su = newSelfUpgrade()
 
 func GetSelfUpgrade() *SelfUpgrade {
+	su.m.Lock()
+	defer su.m.Unlock()
 	return su
 }
 

@@ -49,7 +49,7 @@ func (u UpgradeCheckReq) String() string {
 }
 
 type UpgradeResp struct {
-	Upgraded bool `json:"upgraded"`
+	Upgraded    bool   `json:"upgraded"`
 	Md5Check    string `json:"md5Check"`
 	DownloadURL string `json:"downloadURL"`
 }

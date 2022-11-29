@@ -8,31 +8,38 @@ import (
 	"probermesh/pkg/upgrade"
 )
 
+type resp struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data string `json:"data"`
+}
+
+const defaultCode = 200
+
 func update() func(http.ResponseWriter, *http.Request) {
 	jm := func(v interface{}) []byte {
 		bs, _ := json.Marshal(v)
 		return bs
 	}
 
+	defaultResp := resp{
+		Code: defaultCode,
+		Msg:  "success",
+		Data: "success",
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		resp := &struct {
-			Code int    `json:"code"`
-			Msg  string `json:"msg"`
-			Data string `json:"data"`
-		}{
-			Code: 200,
-			Msg:  "success",
-			Data: "success",
-		}
+		w.Header().Set("Content-Type", "application/json")
 
 		u := upgrade.GetSelfUpgrade()
-		w.Header().Set("Content-Type", "application/json")
 		err := json.NewDecoder(r.Body).Decode(u)
 		if err != nil {
 			logrus.Errorln("upgrade json decode failed", err)
-			resp.Msg = "upgrade json decode failed"
-			resp.Data = err.Error()
-			w.Write(jm(resp))
+			w.Write(jm(resp{
+				Code: defaultCode,
+				Msg:  "upgrade json decode failed",
+				Data: err.Error(),
+			}))
 			return
 		}
 
@@ -40,13 +47,15 @@ func update() func(http.ResponseWriter, *http.Request) {
 		uri, err := url.ParseRequestURI(u.DownloadURL)
 		if err != nil {
 			logrus.Errorln("upgrade ParseRequestURI check failed", err)
-			resp.Msg = "upgrade ParseRequestURI check failed"
-			resp.Data = err.Error()
-			w.Write(jm(resp))
+			w.Write(jm(resp{
+				Code: defaultCode,
+				Msg:  "upgrade ParseRequestURI check failed",
+				Data: err.Error(),
+			}))
 			return
 		}
 
 		u.DownloadURL = uri.String()
-		w.Write(jm(resp))
+		w.Write(jm(defaultResp))
 	}
 }
