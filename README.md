@@ -43,6 +43,8 @@ cd ProberMesh/cmd/proberMesh && go build -o proberMesh .
 # 项目运行
 ./proberMesh -h
 Usage of ./probermesh:
+   -agent.icmp.network-type string
+        agentICMP探测agent自身上报网络类型(公网/内网) (default "intranet")
   -agent.probe.interval string
         agent端探测周期 (default "15s")
   -agent.region string
