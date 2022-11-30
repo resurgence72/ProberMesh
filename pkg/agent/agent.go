@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"probermesh/pkg/util"
-	"time"
 )
 
 type ProberMeshAgentOption struct {
