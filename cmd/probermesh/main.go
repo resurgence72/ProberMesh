@@ -33,7 +33,7 @@ func initLog(mode string) {
 
 		// 日志文件根目录
 		logDir  = "/logs/"
-		logName = util.ProjectName + mode
+		logName = util.ProjectName + "-" + mode
 		logPath = path.Join(logDir, fmt.Sprintf("%s.log", logName))
 	)
 
@@ -60,8 +60,6 @@ func initLog(mode string) {
 	writers := []io.Writer{file, os.Stdout}
 	multiWriters := io.MultiWriter(writers...)
 
-	// 同时记录gin的日志
-	//gin.DefaultWriter = multiWriters
 	// 同时写文件和屏幕
 	logrus.SetOutput(multiWriters)
 
