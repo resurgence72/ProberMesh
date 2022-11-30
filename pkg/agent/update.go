@@ -29,9 +29,9 @@ func (u *upgradeChecker) startUpgradeCheck() {
 	}
 
 	if resp.Upgraded {
-		logrus.Warnln("agent check for upgrade")
+		logrus.Warnln("agent begin start and check for upgraded")
 		if err := upgrade.Upgrade(resp.DownloadURL, resp.Md5Check); err != nil {
-			logrus.Errorln("agent upgrade failed ", err)
+			logrus.Errorln("agent upgrade failed, retrying...", err)
 			return
 		}
 	}

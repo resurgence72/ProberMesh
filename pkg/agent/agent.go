@@ -78,6 +78,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 
 	{
 		if ao.Upgrade {
+			logrus.Warnln("open agent self upgrade functions")
 			// upgrade
 			g.Add(func() error {
 				util.Wait(

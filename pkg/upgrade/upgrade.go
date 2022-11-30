@@ -15,7 +15,6 @@ import (
 
 const (
 	binaryPath = "./"
-	binaryName = "probermesh"
 )
 
 type SelfUpgrade struct {
@@ -66,7 +65,7 @@ func Upgrade(u, m string) error {
 	}
 
 	// 校验成功，删除原本二进制
-	p := binaryPath + binaryName
+	p := binaryPath + util.ProjectName
 	os.Remove(p)
 
 	// 新二进制写入本地

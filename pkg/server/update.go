@@ -56,6 +56,8 @@ func update() func(http.ResponseWriter, *http.Request) {
 		}
 
 		u.DownloadURL = uri.String()
+
+		logrus.Warnln("server check upgrade success, dispatch upgrade request...")
 		w.Write(jm(defaultResp))
 	}
 }

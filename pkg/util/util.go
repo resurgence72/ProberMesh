@@ -9,7 +9,10 @@ import (
 	"time"
 )
 
-const jitter = 50
+const (
+	jitter = 50
+	ProjectName = "probermesh"
+)
 
 // 设置随机延迟，防止并发探测量过大
 func SetJitter() int {
