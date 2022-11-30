@@ -16,6 +16,8 @@ import (
 type rpcCli struct {
 	cli        *gobrpc.RPCClient
 	serverAddr string
+	timeout    time.Duration
+	retry      int
 
 	cancel context.Context
 }
@@ -24,22 +26,32 @@ func initRpcCli(ctx context.Context, addr string) *rpcCli {
 	rc := &rpcCli{
 		serverAddr: addr,
 		cancel:     ctx,
+		timeout:    time.Duration(3) * time.Second,
+		retry:      3,
 	}
-
 	return rc
 }
 
 func (r *rpcCli) Call(sn string, req, resp interface{}) error {
+	var err error
+
 	if cli := r.get(); cli != nil {
-		if err := cli.Call(
-			sn,
-			req,
-			resp,
-		); err != nil {
-			logrus.Errorln("rpc call failed ", sn)
-			r.closeCli()
-			return err
+		// retry
+		for i := 1; i < r.retry+1; i++ {
+			err = cli.Call(
+				sn,
+				req,
+				resp,
+			)
+			if err == nil {
+				return nil
+			}
+			time.Sleep(time.Duration(i) * 300 * time.Millisecond)
 		}
+
+		logrus.Errorln("rpc call failed ", sn)
+		r.closeCli()
+		return err
 	}
 	return nil
 }
@@ -57,8 +69,7 @@ func (r *rpcCli) getCli() (*gobrpc.RPCClient, error) {
 		return r.cli, nil
 	}
 
-	timeout := time.Duration(5) * time.Second
-	conn, err := net.DialTimeout("tcp", r.serverAddr, timeout)
+	conn, err := net.DialTimeout("tcp", r.serverAddr, r.timeout)
 	if err != nil {
 		logrus.Errorln("get cli failed ", err)
 		return nil, err
@@ -81,7 +92,7 @@ func (r *rpcCli) getCli() (*gobrpc.RPCClient, error) {
 	r.cli = gobrpc.NewRPCClient(
 		r.serverAddr,
 		rpc.NewClientWithCodec(rpcCodec),
-		timeout,
+		r.timeout,
 	)
 	return r.cli, nil
 }
