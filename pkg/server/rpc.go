@@ -35,22 +35,33 @@ func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) er
 }
 
 // agent 获取更新接口
-func (s *Server) GetSelfUpgrade(version pb.UpgradeCheckReq, resp *pb.UpgradeResp) error {
+func (s *Server) GetSelfUpgrade(req pb.UpgradeCheckReq, resp *pb.UpgradeResp) error {
 	u := upgrade.GetSelfUpgrade()
-
 	if !u.Force {
-		// 如果强制更新，跳过version的校验 回退
-		if !u.CheckVersion(u.Version, version.String()) {
+		// 非强制更新，需检查version
+		if !u.CheckVersion(u.Version, req.Version) {
 			// 新版本<=当前版本
+			return nil
+		}
+	} else {
+		// 强制更新流程
+		// agent升级完成，直接返回，防止重复升级
+		if u.AgentIsUpgraded(req.Ident) {
 			return nil
 		}
 	}
 
-	resp = &pb.UpgradeResp{
-		Upgraded:    true,
-		Md5Check:    u.Md5Check,
-		DownloadURL: u.DownloadURL,
-	}
+	resp.Upgraded = true
+	resp.Md5Check = u.Md5Check
+	resp.DownloadURL = u.DownloadURL
+	return nil
+}
+
+// agent 更新成功上报接口
+func (s *Server) SelfUpgradeSuccess(req pb.UpgradeCheckReq, resp *string) error {
+	// 升级成功后，存入map
+	u := upgrade.GetSelfUpgrade()
+	u.AgentSetUpgraded(req.Ident)
 	return nil
 }
 

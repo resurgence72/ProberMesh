@@ -32,8 +32,7 @@ func update() func(http.ResponseWriter, *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		u := upgrade.GetSelfUpgrade()
-		err := json.NewDecoder(r.Body).Decode(u)
-		if err != nil {
+		if err := u.Bind(r); err != nil {
 			logrus.Errorln("upgrade json decode failed", err)
 			w.Write(jm(resp{
 				Code: defaultCode,
@@ -54,10 +53,9 @@ func update() func(http.ResponseWriter, *http.Request) {
 			}))
 			return
 		}
+		logrus.Warnln("server check upgrade success, dispatch upgrade request...")
 
 		u.DownloadURL = uri.String()
-
-		logrus.Warnln("server check upgrade success, dispatch upgrade request...")
 		w.Write(jm(defaultResp))
 	}
 }

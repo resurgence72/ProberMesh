@@ -13,6 +13,7 @@ type ProberMeshAgentOption struct {
 	Addr,
 	PInterval,
 	SInterval,
+	UInterval,
 	NetworkType,
 	Region string
 	Upgrade bool
@@ -37,6 +38,12 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	}
 
 	sDuration, err := util.ParseDuration(ao.SInterval)
+	if err != nil {
+		logrus.Errorln("parse sync duration flag failed ", err)
+		return
+	}
+
+	UInterval, err := util.ParseDuration(ao.UInterval)
 	if err != nil {
 		logrus.Errorln("parse sync duration flag failed ", err)
 		return
@@ -83,7 +90,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 			g.Add(func() error {
 				util.Wait(
 					ctxAll,
-					30*time.Second,
+					UInterval,
 					newUpgradeChecker(cli).startUpgradeCheck,
 				)
 				return nil

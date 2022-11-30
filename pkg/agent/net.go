@@ -13,7 +13,6 @@ import (
 
 const (
 	defaultRegionEnv = "PROBER_REGION"
-	defaultRegion    = "cn-shanghai"
 	regionTimeout    = time.Duration(3) * time.Second
 )
 
@@ -22,7 +21,10 @@ const (
 	publicNetType   = "public"
 )
 
-var agentIP string
+var (
+	agentIP string
+	region  = "cn-shanghai"
+)
 
 func initAgentLocalIP(networkType string) {
 	if networkType == intranetNetType {
@@ -80,8 +82,9 @@ func getSelfRegion(dr string) string {
 	}
 
 	// 2. 未指定region, 获取env
-	if region, ok := os.LookupEnv(defaultRegionEnv); ok && len(region) > 0 {
-		return region
+	if r, ok := os.LookupEnv(defaultRegionEnv); ok && len(r) > 0 {
+		region = r
+		return r
 	}
 
 	// 3. env没有 使用curl
@@ -112,21 +115,21 @@ func getSelfRegion(dr string) string {
 			return f(tencentRegion)
 		},
 		func() (string, error) {
-			region, err := f(googleCloudRegion)
-			if err == nil && len(region) > 0 {
-				ss := strings.Split(region, "/")
-				region = ss[len(ss)-1]
+			r, err := f(googleCloudRegion)
+			if err == nil && len(r) > 0 {
+				ss := strings.Split(r, "/")
+				r = ss[len(ss)-1]
 			}
 			return region, err
 		},
 	}
 
 	for _, fn := range pipeLines {
-		if region, err := fn(); err == nil {
-			return region
+		if r, err := fn(); err == nil {
+			region = r
+			return r
 		}
 	}
-
 	// 4. curl不到，使用默认 cn-shanghai
-	return defaultRegion
+	return region
 }

@@ -18,10 +18,14 @@ func newUpgradeChecker(r *rpcCli) *upgradeChecker {
 
 func (u *upgradeChecker) startUpgradeCheck() {
 	resp := new(pb.UpgradeResp)
+	req := pb.UpgradeCheckReq{
+		Version: util.GetVersion(),
+		Ident:   region + defaultKeySeparator + agentIP,
+	}
 
 	if err := u.r.Call(
 		"Server.GetSelfUpgrade",
-		u.version,
+		req,
 		resp,
 	); err != nil {
 		logrus.Errorln("Server.GetSelfUpgrade rpc call failed ", err)
@@ -30,7 +34,16 @@ func (u *upgradeChecker) startUpgradeCheck() {
 
 	if resp.Upgraded {
 		logrus.Warnln("agent begin start and check for upgraded")
-		if err := upgrade.Upgrade(resp.DownloadURL, resp.Md5Check); err != nil {
+		if err := upgrade.Upgrade(
+			resp.DownloadURL,
+			resp.Md5Check, func() {
+				// rpc上报更新成功的函数
+				_ = u.r.Call(
+					"Server.SelfUpgradeSuccess",
+					req,
+					nil,
+				)
+			}); err != nil {
 			logrus.Errorln("agent upgrade failed, retrying...", err)
 			return
 		}

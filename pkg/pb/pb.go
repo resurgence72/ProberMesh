@@ -42,10 +42,9 @@ type PorberResultReq struct {
 	HTTPDurations map[string]float64
 }
 
-type UpgradeCheckReq string
-
-func (u UpgradeCheckReq) String() string {
-	return string(u)
+type UpgradeCheckReq struct {
+	Version string
+	Ident   string
 }
 
 type UpgradeResp struct {

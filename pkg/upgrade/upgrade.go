@@ -1,6 +1,7 @@
 package upgrade
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/sirupsen/logrus"
 	"io"
@@ -24,20 +25,29 @@ type SelfUpgrade struct {
 
 	Force bool `json:"force"`
 
-	m sync.Mutex
+	m sync.RWMutex
 }
 
-var su = newSelfUpgrade()
+var (
+	su         = newSelfUpgrade()
+	UpgradeMap map[string]struct{}
+)
 
 func GetSelfUpgrade() *SelfUpgrade {
 	su.m.Lock()
 	defer su.m.Unlock()
+
+	// lazy load
+	if UpgradeMap == nil {
+		UpgradeMap = make(map[string]struct{})
+	}
 	return su
 }
 
 func newSelfUpgrade() *SelfUpgrade {
 	return &SelfUpgrade{Version: util.GetVersion()}
 }
+
 func (s *SelfUpgrade) CheckVersion(new, old string) bool {
 	if strings.Compare(new, old) < 1 {
 		return false
@@ -45,8 +55,33 @@ func (s *SelfUpgrade) CheckVersion(new, old string) bool {
 	return true
 }
 
-func Upgrade(u, m string) error {
+func (s *SelfUpgrade) Bind(r *http.Request) error {
+	s.m.Lock()
+	defer s.m.Unlock()
+
+	// 每次升级请求默认都需要重新下发，清空hold点的map
+	for k := range UpgradeMap {
+		delete(UpgradeMap, k)
+	}
+	return json.NewDecoder(r.Body).Decode(s)
+}
+
+func (s *SelfUpgrade) AgentIsUpgraded(ident string) bool {
+	s.m.RLock()
+	defer s.m.RUnlock()
+	_, ok := UpgradeMap[ident]
+	return ok
+}
+
+func (s *SelfUpgrade) AgentSetUpgraded(ident string) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	UpgradeMap[ident] = struct{}{}
+}
+
+func Upgrade(u, m string, hook func()) error {
 	// 下载二进制
+	logrus.Warnln("start download new version binary file")
 	resp, err := http.Get(u)
 	if err != nil {
 		return errors.New("upgrade http get failed")
@@ -59,6 +94,7 @@ func Upgrade(u, m string) error {
 	}
 
 	// 校验二进制的md5
+	logrus.Warnln("start check md5sum for binary file")
 	if strings.Compare(util.GetMd5(string(bs)), m) != 0 {
 		io.Copy(ioutil.Discard, resp.Body)
 		return errors.New("upgrade md5Check failed")
@@ -69,6 +105,7 @@ func Upgrade(u, m string) error {
 	os.Remove(p)
 
 	// 新二进制写入本地
+	logrus.Warnln("start replace local binary file")
 	err = ioutil.WriteFile(p, bs, 0755)
 	if err != nil {
 		return errors.New("upgrade ioutil WriteFile failed")
@@ -77,8 +114,11 @@ func Upgrade(u, m string) error {
 
 	// kill
 	defer func() {
+		hook()
 		pro, _ := os.FindProcess(os.Getpid())
 		pro.Signal(syscall.SIGTERM)
 	}()
+
+	logrus.Warnln("start kill old process")
 	return nil
 }
