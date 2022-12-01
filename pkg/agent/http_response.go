@@ -66,22 +66,22 @@ func buildDefaultHTTPProbe() HTTPProbe {
 		HTTPClientConfig:   config.DefaultHTTPClientConfig,
 		IPProtocol:         "ip4",
 		// 默认匹配200
-		ValidStatusCodes:   []int{200},
+		ValidStatusCodes: []int{200},
 	}
 }
 
 func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
-		redirects int
-		module    = buildDefaultHTTPProbe()
+		redirects     int
+		module        = buildDefaultHTTPProbe()
 
-		defaultHTTPPorberResultReq = &pb.PorberResultReq{
-			ProberType:    "http",
-			ProberTarget:  target,
-			LocalIP:       agentIP,
-			SourceRegion:  sourceRegion,
-			TargetRegion:  targetRegion,
-			HTTPDurations: make(map[string]float64),
+		defaultHTTPProberResultReq = &pb.PorberResultReq{
+			ProberType:         "http",
+			ProberTarget:       target,
+			LocalIP:            agentIP,
+			SourceRegion:       sourceRegion,
+			TargetRegion:       targetRegion,
+			HTTPDurations:      make(map[string]float64),
 		}
 	)
 
@@ -93,7 +93,8 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 
 	targetURL, err := url.Parse(target)
 	if err != nil {
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 
 	targetHost := targetURL.Hostname()
@@ -104,10 +105,11 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	var lookupTime float64
 	ip, lookupTime, err = chooseProtocol(ctx, module.IPProtocol, module.IPProtocolFallback, targetHost)
 
-	defaultHTTPPorberResultReq.HTTPDurations["resolve"] = lookupTime
+	defaultHTTPProberResultReq.HTTPDurations["resolve"] = lookupTime
 	if err != nil {
 		logrus.Errorln("resolve err ", err)
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 
 	httpClientConfig := module.HTTPClientConfig
@@ -125,20 +127,23 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	client, err := pconfig.NewClientFromConfig(httpClientConfig, "prober_mesh", pconfig.WithKeepAlivesDisabled())
 	if err != nil {
 		logrus.Errorln("msg", "Error generating HTTP client", "err", err)
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 
 	httpClientConfig.TLSConfig.ServerName = ""
 	noServerName, err := pconfig.NewRoundTripperFromConfig(httpClientConfig, "http_probe", pconfig.WithKeepAlivesDisabled())
 	if err != nil {
 		logrus.Errorln("msg", "Error generating HTTP client without ServerName", "err", err)
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 
 	jar, err := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 	if err != nil {
 		logrus.Errorln("msg", "Error generating cookiejar", "err", err)
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 	client.Jar = jar
 
@@ -187,7 +192,8 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	request, err := http.NewRequest(httpConfig.Method, targetURL.String(), body)
 	if err != nil {
 		logrus.Errorln("msg", "Error creating request", "err", err)
-		return defaultHTTPPorberResultReq
+		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+		return defaultHTTPProberResultReq
 	}
 	request.Host = origHost
 	request = request.WithContext(ctx)
@@ -228,7 +234,8 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		resp = &http.Response{}
 		if err != nil {
 			logrus.Errorln("msg", "Error for HTTP request", "err", err)
-			return defaultHTTPPorberResultReq
+			defaultHTTPProberResultReq.ProberFailedReason = err.Error()
+			return defaultHTTPProberResultReq
 		}
 	} else {
 		requestErrored := (err != nil)
@@ -349,7 +356,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		)
 		// We get the duration for the first request from chooseProtocol.
 		if i != 0 {
-			defaultHTTPPorberResultReq.HTTPDurations["resolve"] = trace.dnsDone.Sub(trace.start).Seconds()
+			defaultHTTPProberResultReq.HTTPDurations["resolve"] = trace.dnsDone.Sub(trace.start).Seconds()
 		}
 		// Continue here if we never got a connection because a request failed.
 		if trace.gotConn.IsZero() {
@@ -357,24 +364,24 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		}
 		if trace.tls {
 			// dnsDone must be set if gotConn was set.
-			defaultHTTPPorberResultReq.HTTPDurations["connect"] = trace.connectDone.Sub(trace.dnsDone).Seconds()
-			defaultHTTPPorberResultReq.HTTPDurations["tls"] = trace.tlsDone.Sub(trace.tlsStart).Seconds()
+			defaultHTTPProberResultReq.HTTPDurations["connect"] = trace.connectDone.Sub(trace.dnsDone).Seconds()
+			defaultHTTPProberResultReq.HTTPDurations["tls"] = trace.tlsDone.Sub(trace.tlsStart).Seconds()
 		} else {
-			defaultHTTPPorberResultReq.HTTPDurations["connect"] = trace.gotConn.Sub(trace.dnsDone).Seconds()
+			defaultHTTPProberResultReq.HTTPDurations["connect"] = trace.gotConn.Sub(trace.dnsDone).Seconds()
 		}
 
 		// Continue here if we never got a response from the server.
 		if trace.responseStart.IsZero() {
 			continue
 		}
-		defaultHTTPPorberResultReq.HTTPDurations["processing"] = trace.responseStart.Sub(trace.gotConn).Seconds()
+		defaultHTTPProberResultReq.HTTPDurations["processing"] = trace.responseStart.Sub(trace.gotConn).Seconds()
 
 		// Continue here if we never read the full response from the server.
 		// Usually this means that request either failed or was redirected.
 		if trace.end.IsZero() {
 			continue
 		}
-		defaultHTTPPorberResultReq.HTTPDurations["transfer"] = trace.end.Sub(trace.responseStart).Seconds()
+		defaultHTTPProberResultReq.HTTPDurations["transfer"] = trace.end.Sub(trace.responseStart).Seconds()
 	}
 
 	if resp.TLS != nil {
@@ -388,7 +395,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	}
 
 	if success {
-		defaultHTTPPorberResultReq.ProberSuccess = true
+		defaultHTTPProberResultReq.ProberSuccess = true
 	}
-	return defaultHTTPPorberResultReq
+	return defaultHTTPProberResultReq
 }

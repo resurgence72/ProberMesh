@@ -35,6 +35,9 @@ type PorberResultReq struct {
 	// 探测是否成功
 	ProberSuccess bool
 
+	// 探测失败原因(http)
+	ProberFailedReason string
+
 	// icmp的字段 resolve setup rtt
 	ICMPDurations map[string]float64
 

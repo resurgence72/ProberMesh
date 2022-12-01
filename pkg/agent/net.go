@@ -29,6 +29,7 @@ var (
 func initAgentLocalIP(networkType string) {
 	if networkType == intranetNetType {
 		agentIP = getIntranetIP()
+		return
 	}
 	agentIP = getPublicIP()
 }

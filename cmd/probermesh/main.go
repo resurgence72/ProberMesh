@@ -15,34 +15,40 @@ import (
 	"time"
 )
 
+type config struct {
+	mode     string
+	logDir   string
+	logLevel int
+	h        bool
+	v        bool
+}
+
 var (
 	serverOption = new(server.ProberMeshServerOption)
 	agentOption  = new(agent.ProberMeshAgentOption)
 
-	mode string
-	h    bool
-	v    bool
+	cfg = new(config)
 )
 
-func initLog(mode string) {
+func initLog(c *config) {
 	var (
+		logDir = c.logDir
 		// 日志级别
-		logLevel = logrus.DebugLevel
+		logLevel = logrus.Level(c.logLevel)
 		// 日志格式
 		format = &logrus.TextFormatter{TimestampFormat: "2006-01-02 15:04:05"}
 
 		// 日志文件根目录
-		logDir  = "/logs/"
-		logName = util.ProjectName + "-" + mode
+		logName = util.ProjectName + "-" + c.mode
 		logPath = path.Join(logDir, fmt.Sprintf("%s.log", logName))
 	)
 
 	// 持久化日志
 	if _, err := os.Stat(logDir); err != nil && os.IsNotExist(err) {
-		if err := os.Mkdir(logDir, 0666); err != nil {
+		if err = os.Mkdir(logDir, 0666); err != nil {
 			logrus.WithFields(logrus.Fields{
 				"err": err,
-			}).Fatalln("can not mkdir logs")
+			}).Fatalln("can not mkdir:", logDir)
 		}
 	}
 
@@ -103,9 +109,19 @@ func initLog(mode string) {
 }
 
 func initArgs() {
-	flag.StringVar(&mode, "mode", "server", "服务模式(agent/server)")
-	flag.BoolVar(&v, "v", false, "版本信息")
-	flag.BoolVar(&h, "h", false, "帮助信息")
+	flag.StringVar(&cfg.mode, "mode", "server", "服务模式(agent/server)")
+	flag.StringVar(&cfg.logDir, "log.dir", "/logs/", "日志目录")
+	flag.IntVar(&cfg.logLevel, "log.level", 3, `日志级别;
+PanicLevel 0
+FatalLevel 1
+ErrorLevel 2
+WarnLevel  3
+InfoLevel  4
+DebugLevel 5
+TraceLevel 6
+`)
+	flag.BoolVar(&cfg.v, "v", false, "版本信息")
+	flag.BoolVar(&cfg.h, "h", false, "帮助信息")
 
 	flag.StringVar(&serverOption.TargetsConfigPath, "server.probe.file", "", "server端探测列表文件路径")
 	flag.StringVar(&serverOption.ICMPDiscoveryType, "server.icmp.discovery", "dynamic", `server端ICMP探测目标获取模式(static/dynamic);
@@ -129,12 +145,12 @@ public: agent上报公网IP地址，用于构建公网维度下icmp网格；
 
 	flag.Parse()
 
-	if v {
+	if cfg.v {
 		logrus.WithField("version", util.GetVersion()).Println("version")
 		os.Exit(0)
 	}
 
-	if h {
+	if cfg.h {
 		flag.Usage()
 		os.Exit(0)
 	}
@@ -143,13 +159,13 @@ public: agent上报公网IP地址，用于构建公网维度下icmp网格；
 func main() {
 	initArgs()
 
-	switch mode {
+	switch cfg.mode {
 	case "agent":
-		initLog(mode)
+		initLog(cfg)
 		logrus.Warnln("build for agent mode")
 		agent.BuildAgentMode(agentOption)
 	case "server":
-		initLog(mode)
+		initLog(cfg)
 		logrus.Warnln("build for server mode")
 		server.BuildServerMode(serverOption)
 	default:

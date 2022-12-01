@@ -4,19 +4,21 @@ prober_configs:
     targets:
       - http://www.baidu.com
       - http://www.taobao.com
+      - www.ladjflajfl.ccc
 
-#  - prober_type: http
-#    region: cn-chengdu
-#    targets:
-#      - www.baidu.com
-#      - www.taobao.com
+  - prober_type: http
+    region: cn-chengdu
+    targets:
+      - www.baidu.com
+      - www.taobao.com
+
   - prober_type: icmp
     region: cn-hangzhou
     targets:
-#      - 180.101.49.12
-#      - 8.8.8.8
-      - www.baidu.com
-#  - prober_type: icmp
-#    region: cn-shanghai
-#    targets:
-#      - 8.8.8.8
+      - 180.101.49.12
+      - 8.8.8.8
+
+  - prober_type: icmp
+    region: cn-shanghai
+    targets:
+      - 8.8.8.8

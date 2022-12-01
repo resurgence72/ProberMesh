@@ -47,7 +47,7 @@ var (
 		Namespace: namespace,
 		Name:      "http_failed",
 		Help:      "http prober failed times",
-	}, []string{"source_region", "target_addr"})
+	}, []string{"source_region", "target_addr", "failed_reason"})
 
 	// http 分阶段耗时
 	httpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{

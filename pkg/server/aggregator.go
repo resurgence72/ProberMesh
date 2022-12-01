@@ -22,9 +22,13 @@ type Aggregator struct {
 }
 
 type aggProberResult struct {
-	sourceRegion, targetRegion string // icmp 使用
-	targetAddr                 string // http 使用
-	batchCnt                   int64  // cnt算avg
+	sourceRegion string // icmp 使用
+	targetRegion string // icmp 使用
+
+	targetAddr   string // http 使用
+	failedReason string // http 使用
+
+	batchCnt int64 // cnt算avg
 
 	failedCnt int64
 	phase     map[string]float64
@@ -115,6 +119,11 @@ func (a *Aggregator) agg() {
 				continue
 			}
 
+			// 为http设定reason
+			if pr.ProberType == "http" {
+				container.failedReason = pr.ProberFailedReason
+			}
+
 			// 失败任务 failedCnt自增
 			container.failedCnt++
 		}
@@ -129,6 +138,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 		httpProberFailedGaugeVec.WithLabelValues(
 			agg.sourceRegion,
 			agg.targetAddr,
+			agg.failedReason,
 		).Set(float64(agg.failedCnt))
 
 		for stage, total := range agg.phase {
