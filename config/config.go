@@ -3,8 +3,6 @@ package config
 import (
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 type ProberMeshConfig struct {
@@ -20,13 +18,7 @@ type ProberConfig struct {
 var cfg *ProberMeshConfig
 
 func InitConfig(path string) error {
-	abs, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	cfgPath := filepath.Join(abs, path)
-	config, err := loadFile(cfgPath)
+	config, err := loadFile(path)
 	if err != nil {
 		return err
 	}
