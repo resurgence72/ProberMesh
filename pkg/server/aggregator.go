@@ -124,6 +124,7 @@ func (a *Aggregator) agg() {
 				}
 				continue
 			}
+			// 走到下面逻辑，说明当前探测失败
 
 			// 为http设定reason
 			if pt == "http" && len(pr.ProberFailedReason) > 0 && len(container.failedReason) == 0 {
