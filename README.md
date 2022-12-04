@@ -201,6 +201,18 @@ ICMP网格需求下:
 -agent.probe.interval=15s \
 -agent.sync.interval=1m \
 -server.rpc.addr=1.1.1.1:6000
+
+
+
+###################
+注意: 
+脚本 script/probermesh_agent_deploy.sh 提供基于 supervisor 托管的公网网格拨测（场景一）agent一键部署功能；
+场景二/三需要根据相应配置调整脚本中agent启动参数；
+
+脚本使用方式:  sh probermesh_agent_deploy.sh ali-cn-shanghai
+脚本后需要跟一个agent的region信息，对标 -agent.region
+
+server端建议基于 supervisor 手动配置，因为配置较灵活且只需要一个节点，脚本主要解决agent的快速部署；
 ```
 
 

@@ -1,7 +1,7 @@
 #bin/bash
 
 BINARY_NAME="probermesh"
-DOWNLOAD_URL="https://github.com/resurgence72/ProberMesh/releases/download/v0.0.3/probermesh"
+DOWNLOAD_URL="https://github.com/resurgence72/ProberMesh/releases/download/v0.0.4/probermesh" # 推荐使用最新版本
 SERVER_RPC_ADDR="1.1.1.1:6000"
 LOCAL_REGION=$1
 
@@ -25,14 +25,11 @@ autorestart = true
 startretries = 5
 user = root
 redirect_stderr = true
-stdout_logfile_maxbytes = 100MB
-stdout_logfile_backups = 10
-stdout_logfile = /var/log/${BINARY_NAME}-agent.log
 EOF
 
 systemctl restart supervisord.service \
 && systemctl enable supervisord.service \
 && supervisorctl update \
-&& supervisorctl start ${BINARY_NAME} \
+&& supervisorctl restart ${BINARY_NAME} \
 && supervisorctl status ${BINARY_NAME} \
-&& echo "agent ${LOCAL_REGION} start success"
+&& echo "agent ${LOCAL_REGION} deploy and start success"
