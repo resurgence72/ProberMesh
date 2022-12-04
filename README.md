@@ -1,5 +1,19 @@
 # ProberMesh
 
+#### 什么是网格化探测？
+```text
+网格化探测通常是指各region/zone两两探测，形成一张 mesh 网格，通常是icmp探测的高阶需求;
+
+probermesh的优势
+1. 支持内网/公网模式下 icmp 自动发现，agent 一键部署自动加入 mesh 网格,不需要借助 consul 等额外组件;
+2. 支持同 region 下的容错性；这块很重要，同 region 下可以部署多 agent,防止由于单台 agent 网络问题造成的探测失败 -> 告警噪音；
+   server会对同region下结果agg, 同region下agent越多，数据越准确，越稳定，容错率越高；
+3. 原生支持 prometheus, server 暴露openMetric数据供 prometheus 拉取;
+4. 支持 icmp/http 两种探测形式，icmp mesh 和 http 多点探测 可共存;
+5. 丰富的 metric 暴露，可结合 region 做灵活的自定义dashboard和告警策略;
+6. agent 支持自升级，运维极简;
+```
+
 #### 分布式 C/S 网络网格探测框架
 
 > ICMP 视野落在 Region to Region ；
@@ -8,7 +22,7 @@
 >
 > 同 Region 下做 agg；
 >
->[Region的意义可以自定义，例如(K8s环境/Host环境/Region/各云厂商等)]
+>Region 是此项目的核心概念，极其灵活，意义可以自定义。例如(K8s/host环境 prod/test环境 ali/gcp厂商 等)
 
 - ##### 支持 ICMP/HTTP 分阶段耗时
 
