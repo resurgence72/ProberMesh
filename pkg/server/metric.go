@@ -80,4 +80,5 @@ func init() {
 	prometheus.MustRegister(httpProberFailedGaugeVec)
 	prometheus.MustRegister(httpProberDurationGaugeVec)
 	prometheus.MustRegister(serverReceivePointsVec)
+	prometheus.MustRegister(agentHealthCheckGaugeVec)
 }
