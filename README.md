@@ -22,18 +22,21 @@
 
 ```text
 # ping 指标
-prober_icmp_failed
-prober_icmp_duration_seconds
-prober_icmp_packet_loss_rate
-prober_icmp_jitter_stddev_seconds
-prober_icmp_duration_seconds_total (histogram)
+prober_icmp_failed   # icmp当前拨测失败数  gauge
+prober_icmp_duration_seconds  # icmp拨测分阶段耗时 gauge
+prober_icmp_packet_loss_rate  # icmp拨测丢包率 gauge
+prober_icmp_jitter_stddev_seconds  # icmp拨测标准差 gauge
+prober_icmp_duration_seconds_total # icmp拨测耗时分布 histogram
 
 # http 指标
-prober_http_failed
-prober_http_duration_seconds
+prober_http_failed  # http当前拨测失败数 gauge
+prober_http_duration_seconds  # http拨测分阶段耗时 gauge
 
 # 健康检查
-prober_agent_is_alive
+prober_agent_is_alive  # agent存活情况 gauge
+
+# 通用
+server_receive_points  # server收到的上报点数 counter
 ```
 
 #### 运维指南
@@ -80,14 +83,17 @@ Usage of ./probermesh:
         agent端是否开启自升级功能,默认关闭
     -agent.upgrade.interval string
         agent端检查upgrade周期; 仅在指定 -agent.upgrade 后生效 (default "1m")
-    -server.rpc.listen.addr string
-        serverRPC监听地址 (default "localhost:6000")
+    -server.rpc.addr string
+        server端RPC地址 (default "localhost:6000")
+    
     
     # server 端参数
     -server.aggregation.interval string
         server聚合周期 (default "15s")
     -server.http.listen.addr string
         serverHTTP监听地址 (default "localhost:6001")
+    -server.rpc.listen.addr string
+        serverRPC监听地址 (default "localhost:6000")
     -server.icmp.discovery string
         server端ICMP探测目标获取模式(static/dynamic);
         static:  各region下icmp探测地址按照配置文件为准;
@@ -95,14 +101,10 @@ Usage of ./probermesh:
          (default "dynamic")
     -server.probe.file string
         server端探测列表文件路径
-    -server.rpc.addr string
-        server端RPC地址 (default "localhost:6000")
-    
-  
+   
   
 
-
-# 探测列表文件(可选)
+# 探测列表文件(可选) -server.probe.file 参数所指定的配置
 cat prober_mesh.yaml
 prober_configs:
   - prober_type: http
@@ -118,13 +120,6 @@ prober_configs:
 
 
 
-# server 端使用
-./probermesh
-
-
-# agent 端使用
-./probermesh -mode agent -agent.region ali-cn-shanghai -server.rpc.addr localhost:6000
-
 PS: region参数优先级
 1. 命令行 -agent.region
 2. 环境变量 PROBER_REGION
@@ -138,14 +133,81 @@ PS: -server.icmp.discovery 参数支持两种icmp发现模式
 1. static静态发现:  icmp探测地址从静态配置文件中获取，需指定 -server.probe.file 参数配合使用，否则无icmp和http数据，启动没意义
 2. dynamic动态发现: icmp探测地址由agent动态上报，并且agent 每1m (-agent.sync.interval) 向server同步一次，可自动生成一张icmp Mesh 网格
 
-http参数仅支持配置文件指定
+http仅支持通过配置文件指定，不支持自动发现模式
 ```
 
-#### Prometheus 端配置拉取
+#### ProberMesh最佳实践
+```shell
+ICMP网格需求下:
+- 内网互通环境下，使用server动态模式 -server.icmp.discovery=dynamic + agent内网模式 -agent.icmp.netowrk-type=intranet 拿到内网，以内网作为ip池上报server;
+- 公网环境下，使用server动态模式 -server.icmp.discovery=dynamic + agent公网模式 -agent.icmp.netowrk-type=public 拿到公网ip，以公网网作为ip池上报server;
 
+其余需求下:
+使用server静态模式 -server.icmp.discovery=static + agent指定配置文件 -server.probe.file=./prober_mesh.yaml 自定义互(ping/http)对象
+
+
+########### 场景一: 公网icmp拨测网格化 ###########
+# server 端使用
+./probermesh \
+-mode server \
+-server.rpc.listen.addr=1.1.1.1:6000 \
+-server.http.listen.addr=1.1.1.1:6001 \
+-server.aggregation.interval=15s \
+-server.icmp.discovery=dynamic   # 1. 设置为动态模式
+
+# agent 端使用
+./probermesh \
+-mode agent \
+-agent.region=ali-cn-shanghai \
+-agent.probe.interval=15s \
+-agent.sync.interval=1m \
+-agent.icmp.network-type=public \   # 2. 设置为公网模式
+-server.rpc.addr=1.1.1.1:6000
+
+
+########### 场景二: 内网互通icmp拨测网格化 ###########
+# server 端使用
+./probermesh \
+-mode server \
+-server.rpc.listen.addr=1.1.1.1:6000 \
+-server.http.listen.addr=1.1.1.1:6001 \
+-server.aggregation.interval=15s \
+-server.icmp.discovery=dynamic  # 1. 设置为动态模式
+
+# agent 端使用
+./probermesh \
+-mode agent \
+-agent.region=ali-cn-shanghai \
+-agent.probe.interval=15s \
+-agent.sync.interval=1m \
+-agent.icmp.network-type=intranet \  # 2. 设置为内网模式
+-server.rpc.addr=1.1.1.1:6000
+
+
+########### 场景三: 非网格化icmp拨测 / 通用http拨测 ###########
+# server 端使用
+./probermesh \
+-mode server \
+-server.rpc.listen.addr=1.1.1.1:6000 \
+-server.http.listen.addr=1.1.1.1:6001 \
+-server.aggregation.interval=15s \
+-server.icmp.discovery=static \   # 1. 设置为静态模式
+-server.probe.file=./probe_mesh.yaml  # 2. 指定探测配置文件
+
+# agent 端使用
+./probermesh \
+-mode agent \
+-agent.region=ali-cn-shanghai \
+-agent.probe.interval=15s \
+-agent.sync.interval=1m \
+-server.rpc.addr=1.1.1.1:6000
+```
+
+
+#### Prometheus 采集配置
 ```shell script
 scrape_configs:
-  - job_name: "prober_mesh"
+  - job_name: "probermesh"
     static_configs:
       - targets: ["$server.http.listen.addr"]
     metric_relabel_configs:
@@ -159,54 +221,47 @@ scrape_configs:
 ##### 1. 需求及实现
 
 ```text
-probermesh 部署后存在一种场景，我们需要对 agent 角色节点进行升级或bugfix；通用的大批量agent升级操作方式无非如下几种
-1. 手动人工替换二进制 restart
+probermesh 部署后存在一种场景，我们需要对 agent 进行升级或bug fix；这在 C/S agent 二进制场景中是一种常见需求;
+通用的批量升级方式无非如下几种
+1. 手动替换二进制 restart
    弊端：操作繁琐,节点多了后需要耗费大量时间
 2. ansible 自动化批量执行
    弊端: 节点多了后ssh执行效率很低
-3. 基于 kubernetes 环境做 Deployment upgrade
-   弊端: probermesh 大部分场景是部署在同内网的多region, 或者不同内网的region通过公网通讯；使用k8s托管成本太高
+3. 基于 kubernetes 环境做 Deployment/DaemonSet replace
+   弊端: probermesh 大部分场景是部署在同内网的多region, 或不同region通过公网通讯；使用k8s托管成本太高
 4. self upgrade节点自升级
    弊端: 代码层面适配，大规模节点下升级有可能把管理机带宽打满(probermesh主要多对多拨测，节点数量不会很大，打满问题不太会发生)
+5. ...
 
 
-当前使用方法4实现了自升级，这种实现方式有个前提: agent 节点需要使用守护进程托管，例如 supervisord; 
 
-升级流程： 管理机向 server 端 http://${server_http_addr}/upgrade 发送 POST 升级请求：
+当前使用4实现自升级，这种实现方式有两个前提: 
+1. agent 节点需要使用守护进程托管，例如 supervisord; 
+2. agent 需要指定 -agent.upgrade 参数;
+
+
+
+升级流程： 管理机向 server 端 http://${server_http_addr}/-/upgrade 发送 POST 升级请求：
 {
-"downloadURL": "http://172.18.12.38:9999/probermesh",
-"md5Check": "0a85983226d91029bcf5701f94d18753",
-"version": "0.0.1",
-"force": false,
+    "downloadURL": "http://172.18.12.38:9999/probermesh",
+    "md5Check": "0a85983226d91029bcf5701f94d18753",
+    "version": "0.0.1",
+    "force": false,
 }
-downloadURL 标识agent新版本二进制的下载地址，这里要注意，二进制名称要和原本一直，否则守护进程会restart失败;
-md5Check 标识agent新版本的md5，agent需要和下载的二进制做md5校验，校验成功才会替换升级;
-version 标识新版本的version;
-force 标识是否强制升级; 
+downloadURL： 标识agent新版本二进制的下载地址，这里要注意，二进制名称要和原启动命令二进制名称一致，否则守护进程会restart失败;
+md5Check： 标识agent新版本的md5，agent需要和下载的二进制做md5校验，校验成功才会替换升级;
+version： 标识新版本的version;
+force： 标识是否强制升级，这里存在两种情况
     - false 情况下，正常升级，agent会进行 version check 看需要升级的版本否比当前版本高，如果符合条件，agent会进行调谐重启升级，直至成功升级到高版本为止；
     - true 情况下，强制升级，agent跳过version check,支持任意版本号，agent拿到升级信息后只会升级一次(无论成功或失败，原因是防止强制升级失败导致无限制升级重启，导致服务不可用)
-
-agent 定时向server端获取upgrade信息，拿到upgrade info后且check成功会 在下载并替换二进制然后 kill-self, 当再被守护进程拉起时即是新版本；升级期间建议通过 agent_is_alive{version="0.0.1"} 指标监控升级情况；
 ```
 
-##### 2. 存在的问题
-
+##### 2. 自升级存在的问题
 ```text
-当前agent升级是全量升级，那如何做灰度或做并发控制？ 这种需求通常存在于 agent 节点规模很大的场景
+agent升级是全量升级，如何做灰度或做并发控制？ 这种需求通常存在于 agent 节点规模很大的场景；
 1. 需要一批批替换，例如两千个agent, 100台100台的升级；
-2. 管理机需要限制带宽，防止带宽被打满
+2. 管理机需要限制带宽，防止带宽被打满；
 
-由于probermesh暂时无此需求，这里提供一个思路，后续有需求时再实现：
+由于probermesh目前暂无此需求，这里提供一个思路，后续有需求时再实现：
 通过分布式锁hold agent upgrade count
-```
-
-#### 最佳实践
-
-```text
-ICMP网格需求下:
-- 内网互通环境下，使用server动态模式 -server.icmp.discovery=dynamic + agent内网模式 -agent.icmp.netowrk-type=intranet 拿到内网，以内网作为ip池上报server;
-- 公网环境下，使用server动态模式 -server.icmp.discovery=dynamic + agent公网模式 -agent.icmp.netowrk-type=public 拿到公网ip，以公网网作为ip池上报server;
-
-其余需求下:
-使用server静态模式 -server.icmp.discovery=static + agent指定配置文件 -server.probe.file=./prober_mesh.yaml 自定义互(ping/http)对象
 ```
