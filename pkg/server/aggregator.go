@@ -26,7 +26,7 @@ type aggProberResult struct {
 	targetRegion string // icmp 使用
 
 	targetAddr   string // http 使用
-	failedReason string // http 使用
+	failedReason string //http 使用
 
 	batchCnt int64 // cnt算avg
 
@@ -85,9 +85,13 @@ func (a *Aggregator) agg() {
 				containers map[string]*aggProberResult
 				phase      map[string]float64
 				key        string
+
+				pt = pr.ProberType
 			)
 
-			pt := pr.ProberType
+			// 打点上报数量counter
+			serverReceivePointsVec.WithLabelValues(pt).Inc()
+
 			if pt == "http" {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
@@ -122,15 +126,14 @@ func (a *Aggregator) agg() {
 			}
 
 			// 为http设定reason
-			if pt == "http" {
+			if pt == "http" && len(pr.ProberFailedReason) > 0 && len(container.failedReason) == 0 {
+				// 如果探测类型是 http ，并且当前存在失败信息，并且 failedReason还未初始化信息，这种情况下才去赋值
+				// 也就是说 这里只会获取第一次获取到的拨测失败信息
 				container.failedReason = pr.ProberFailedReason
 			}
 
 			// 失败任务 failedCnt自增
 			container.failedCnt++
-
-			// 打点上报数量counter
-			serverReceivePointsVec.WithLabelValues(pt).Inc()
 		}
 	}
 
@@ -139,16 +142,11 @@ func (a *Aggregator) agg() {
 }
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
-	var reason string
-
 	for _, agg := range http {
-		if len(agg.failedReason) > 0 {
-			reason = agg.failedReason
-		}
 		httpProberFailedGaugeVec.WithLabelValues(
 			agg.sourceRegion,
 			agg.targetAddr,
-			reason,
+			agg.failedReason,
 		).Set(float64(agg.failedCnt))
 
 		for stage, total := range agg.phase {
