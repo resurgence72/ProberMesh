@@ -105,7 +105,7 @@ Usage of ./probermesh:
   
 
 # 探测列表文件(可选) -server.probe.file 参数所指定的配置
-cat prober_mesh.yaml
+cat probermesh.yaml
 prober_configs:
   - prober_type: http
     region: ali-cn-beijing
@@ -143,7 +143,7 @@ ICMP网格需求下:
 - 公网环境下，使用server动态模式 -server.icmp.discovery=dynamic + agent公网模式 -agent.icmp.netowrk-type=public 拿到公网ip，以公网网作为ip池上报server;
 
 其余需求下:
-使用server静态模式 -server.icmp.discovery=static + agent指定配置文件 -server.probe.file=./prober_mesh.yaml 自定义互(ping/http)对象
+使用server静态模式 -server.icmp.discovery=static + agent指定配置文件 -server.probe.file=./probermesh.yaml 自定义互(ping/http)对象
 
 
 ########### 场景一: 公网icmp拨测网格化 ###########
