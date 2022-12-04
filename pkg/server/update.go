@@ -16,7 +16,7 @@ type resp struct {
 
 const defaultCode = 200
 
-func update() func(http.ResponseWriter, *http.Request) {
+func update(r *http.Request) []byte {
 	jm := func(v interface{}) []byte {
 		bs, _ := json.Marshal(v)
 		return bs
@@ -28,34 +28,28 @@ func update() func(http.ResponseWriter, *http.Request) {
 		Data: "success",
 	}
 
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		u := upgrade.GetSelfUpgrade()
-		if err := u.Bind(r); err != nil {
-			logrus.Errorln("upgrade json decode failed", err)
-			w.Write(jm(resp{
-				Code: defaultCode,
-				Msg:  "upgrade json decode failed",
-				Data: err.Error(),
-			}))
-			return
-		}
-
-		// 校验http是否正确
-		uri, err := url.ParseRequestURI(u.DownloadURL)
-		if err != nil {
-			logrus.Errorln("upgrade ParseRequestURI check failed", err)
-			w.Write(jm(resp{
-				Code: defaultCode,
-				Msg:  "upgrade ParseRequestURI check failed",
-				Data: err.Error(),
-			}))
-			return
-		}
-		logrus.Warnln("server check upgrade success, dispatch upgrade request...")
-
-		u.DownloadURL = uri.String()
-		w.Write(jm(defaultResp))
+	u := upgrade.GetSelfUpgrade()
+	if err := u.Bind(r); err != nil {
+		logrus.Errorln("upgrade json decode failed", err)
+		return jm(resp{
+			Code: defaultCode,
+			Msg:  "upgrade json decode failed",
+			Data: err.Error(),
+		})
 	}
+
+	// 校验http是否正确
+	uri, err := url.ParseRequestURI(u.DownloadURL)
+	if err != nil {
+		logrus.Errorln("upgrade ParseRequestURI check failed", err)
+		return jm(resp{
+			Code: defaultCode,
+			Msg:  "upgrade ParseRequestURI check failed",
+			Data: err.Error(),
+		})
+	}
+	logrus.Warnln("server check upgrade success, dispatch upgrade request...")
+
+	u.DownloadURL = uri.String()
+	return jm(defaultResp)
 }

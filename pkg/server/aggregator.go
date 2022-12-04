@@ -86,7 +86,9 @@ func (a *Aggregator) agg() {
 				phase      map[string]float64
 				key        string
 			)
-			if pr.ProberType == "http" {
+
+			pt := pr.ProberType
+			if pt == "http" {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
 				key = pr.SourceRegion + defaultKeySeparator + pr.ProberTarget
@@ -120,12 +122,15 @@ func (a *Aggregator) agg() {
 			}
 
 			// 为http设定reason
-			if pr.ProberType == "http" {
+			if pt == "http" {
 				container.failedReason = pr.ProberFailedReason
 			}
 
 			// 失败任务 failedCnt自增
 			container.failedCnt++
+
+			// 打点上报数量counter
+			serverReceivePointsVec.WithLabelValues(pt).Inc()
 		}
 	}
 
@@ -134,11 +139,16 @@ func (a *Aggregator) agg() {
 }
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
+	var reason string
+
 	for _, agg := range http {
+		if len(agg.failedReason) > 0 {
+			reason = agg.failedReason
+		}
 		httpProberFailedGaugeVec.WithLabelValues(
 			agg.sourceRegion,
 			agg.targetAddr,
-			agg.failedReason,
+			reason,
 		).Set(float64(agg.failedCnt))
 
 		for stage, total := range agg.phase {

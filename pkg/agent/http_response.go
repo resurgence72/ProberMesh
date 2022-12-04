@@ -39,49 +39,48 @@ type byteCounter struct {
 }
 
 type HTTPProbe struct {
-	// Defaults to 2xx.
-	ValidStatusCodes             []int                   `yaml:"valid_status_codes,omitempty"`
-	ValidHTTPVersions            []string                `yaml:"valid_http_versions,omitempty"`
+	ValidStatusCodes             []int                   `yaml:"valid_status_codes,omitempty"`  // http响应码校验 Defaults to 2xx.
+	ValidHTTPVersions            []string                `yaml:"valid_http_versions,omitempty"` // http版本校验
 	IPProtocol                   string                  `yaml:"preferred_ip_protocol,omitempty"`
 	IPProtocolFallback           bool                    `yaml:"ip_protocol_fallback,omitempty"`
-	SkipResolvePhaseWithProxy    bool                    `yaml:"skip_resolve_phase_with_proxy,omitempty"`
-	NoFollowRedirects            *bool                   `yaml:"no_follow_redirects,omitempty"`
-	FailIfSSL                    bool                    `yaml:"fail_if_ssl,omitempty"`
-	FailIfNotSSL                 bool                    `yaml:"fail_if_not_ssl,omitempty"`
-	Method                       string                  `yaml:"method,omitempty"`
-	Headers                      map[string]string       `yaml:"headers,omitempty"`
-	FailIfBodyMatchesRegexp      []Regexp                `yaml:"fail_if_body_matches_regexp,omitempty"`
-	FailIfBodyNotMatchesRegexp   []Regexp                `yaml:"fail_if_body_not_matches_regexp,omitempty"`
-	FailIfHeaderMatchesRegexp    []HeaderMatch           `yaml:"fail_if_header_matches,omitempty"`
-	FailIfHeaderNotMatchesRegexp []HeaderMatch           `yaml:"fail_if_header_not_matches,omitempty"`
-	Body                         string                  `yaml:"body,omitempty"`
+	NoFollowRedirects            *bool                   `yaml:"no_follow_redirects,omitempty"`             // 允许重定向
+	FailIfSSL                    bool                    `yaml:"fail_if_ssl,omitempty"`                     // ssl则失败
+	FailIfNotSSL                 bool                    `yaml:"fail_if_not_ssl,omitempty"`                 // 非ssl则失败
+	Method                       string                  `yaml:"method,omitempty"`                          // 请求方法
+	Headers                      map[string]string       `yaml:"headers,omitempty"`                         // 携带的请求头
+	FailIfBodyMatchesRegexp      []Regexp                `yaml:"fail_if_body_matches_regexp,omitempty"`     // body匹配上则失败
+	FailIfBodyNotMatchesRegexp   []Regexp                `yaml:"fail_if_body_not_matches_regexp,omitempty"` // body没匹配上则失败
+	FailIfHeaderMatchesRegexp    []HeaderMatch           `yaml:"fail_if_header_matches,omitempty"`          // header匹配上则失败
+	FailIfHeaderNotMatchesRegexp []HeaderMatch           `yaml:"fail_if_header_not_matches,omitempty"`      // header没正则匹配上则失败
+	Body                         string                  `yaml:"body,omitempty"`                            // 请求要携带的信息
 	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,inline"`
-	Compression                  string                  `yaml:"compression,omitempty"`
-	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
+	Compression                  string                  `yaml:"compression,omitempty"`     // 指定压缩算法
+	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"` // body大小限制
 }
 
 func buildDefaultHTTPProbe() HTTPProbe {
 	return HTTPProbe{
 		IPProtocolFallback: true,
-		HTTPClientConfig:   config.DefaultHTTPClientConfig,
-		IPProtocol:         "ip4",
-		// 默认匹配200
-		ValidStatusCodes: []int{200},
+		// 是否重定向和是否允许http2
+		HTTPClientConfig: config.DefaultHTTPClientConfig,
+		IPProtocol:       "ip4",
+		// 默认匹配2xx
+		//ValidStatusCodes: []int{200},
 	}
 }
 
 func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
-		redirects     int
-		module        = buildDefaultHTTPProbe()
+		redirects int
+		module    = buildDefaultHTTPProbe()
 
 		defaultHTTPProberResultReq = &pb.PorberResultReq{
-			ProberType:         "http",
-			ProberTarget:       target,
-			LocalIP:            agentIP,
-			SourceRegion:       sourceRegion,
-			TargetRegion:       targetRegion,
-			HTTPDurations:      make(map[string]float64),
+			ProberType:    "http",
+			ProberTarget:  target,
+			LocalIP:       agentIP,
+			SourceRegion:  sourceRegion,
+			TargetRegion:  targetRegion,
+			HTTPDurations: make(map[string]float64),
 		}
 	)
 

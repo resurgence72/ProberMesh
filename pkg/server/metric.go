@@ -5,6 +5,13 @@ import "github.com/prometheus/client_golang/prometheus"
 var (
 	namespace = "prober"
 
+	// server 接收到的上报数量
+	serverReceivePointsVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "server_receive_points",
+		Help:      "number of reported points received by the server",
+	}, []string{"prober_type"})
+
 	// icmp 探测失败数量
 	icmpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
@@ -72,5 +79,5 @@ func init() {
 	prometheus.MustRegister(icmpProberJitterStdDevGaugeVec)
 	prometheus.MustRegister(httpProberFailedGaugeVec)
 	prometheus.MustRegister(httpProberDurationGaugeVec)
-	prometheus.MustRegister(agentHealthCheckGaugeVec)
+	prometheus.MustRegister(serverReceivePointsVec)
 }

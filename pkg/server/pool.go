@@ -9,8 +9,9 @@ import (
 )
 
 type targetsPool struct {
-	pool map[string]map[string]*config.ProberConfig
-	cfg  *config.ProberMeshConfig
+	pool      map[string]map[string]*config.ProberConfig
+	cfg       *config.ProberMeshConfig
+	discovery discoveryType
 
 	done  context.Context
 	ready chan struct{}
@@ -31,14 +32,17 @@ func newTargetsPool(
 	ready chan struct{},
 	dt string,
 ) *targetsPool {
+	discovery := discoveryType(dt)
+
 	tp = &targetsPool{
-		pool:  make(map[string]map[string]*config.ProberConfig),
-		cfg:   cfg,
-		done:  ctx,
-		ready: ready,
+		pool:      make(map[string]map[string]*config.ProberConfig),
+		cfg:       cfg,
+		done:      ctx,
+		ready:     ready,
+		discovery: discovery,
 	}
 
-	switch discoveryType(dt) {
+	switch discovery {
 	case DynamicDiscovery:
 		logrus.Warnln("server use dynamic discovery type to find icmp targets by agent report")
 		go tp.updatePool()
@@ -58,6 +62,11 @@ func (t *targetsPool) start() {
 				}
 			}
 		*/
+		// dynamic情况下忽略配置文件icmp target
+		if t.discovery == DynamicDiscovery && pc.ProberType == "icmp" {
+			continue
+		}
+
 		if pcm, ok := t.pool[pc.Region]; ok {
 			pcm[pc.ProberType] = pc
 		} else {
@@ -126,6 +135,26 @@ func (t *targetsPool) getPool(sourceRegion string) map[string][]*config.ProberCo
 			}
 			pcs[region] = ps
 		}
+	}
+	return pcs
+}
+
+func (t *targetsPool) getTargets() interface{} {
+	type targetGroup struct {
+		ProberType string   `json:"prober_type"`
+		Targets    []string `json:"targets"`
+	}
+
+	pcs := make(map[string][]targetGroup)
+	for region, pcm := range t.pool {
+		var ps []targetGroup
+		for _, pc := range pcm {
+			ps = append(ps, targetGroup{
+				ProberType: pc.ProberType,
+				Targets:    pc.Targets,
+			})
+		}
+		pcs[region] = ps
 	}
 	return pcs
 }

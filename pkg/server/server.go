@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"github.com/oklog/run"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -92,7 +93,11 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		// http server
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
-		mux.HandleFunc("/upgrade", update())
+		mux.HandleFunc("/-/upgrade", util.WithJSONHeader(update))
+		mux.HandleFunc("/-/targets", util.WithJSONHeader(func(r *http.Request) []byte {
+			bs, _ := json.Marshal(tp.getTargets())
+			return bs
+		}))
 		svc := http.Server{
 			Addr:    so.HTTPListenAddr,
 			Handler: mux,

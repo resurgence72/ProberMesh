@@ -5,12 +5,13 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"math/rand"
+	"net/http"
 	"probermesh/pkg/version"
 	"time"
 )
 
 const (
-	jitter = 50
+	jitter      = 50
 	ProjectName = "probermesh"
 )
 
@@ -38,4 +39,11 @@ func GetVersion() string {
 func GetMd5(s string) string {
 	sum := md5.Sum([]byte(s))
 	return hex.EncodeToString(sum[:])
+}
+
+func WithJSONHeader(f func(r *http.Request) []byte) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(f(r))
+	}
 }
