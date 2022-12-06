@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/patrickmn/go-cache"
 	"probermesh/pkg/util"
 	"strings"
 	"sync"
@@ -10,7 +11,7 @@ import (
 
 type healthDot struct {
 	expires      time.Duration
-	agentPool    map[string]time.Time
+	agentPool    *cache.Cache
 	discoverPool map[string]map[string]struct{}
 
 	cancel context.Context
@@ -23,18 +24,30 @@ var hd *healthDot
 func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{}) *healthDot {
 	hd = &healthDot{
 		expires:      expires,
-		agentPool:    make(map[string]time.Time),
+		agentPool:    cache.New(expires, expires),
 		discoverPool: make(map[string]map[string]struct{}),
 		cancel:       ctx,
 		ready:        ready,
 	}
+
+	// 过期时，打点0
+	hd.agentPool.OnEvicted(func(key string, i interface{}) {
+		sks := hd.splitKey(key)
+		agentHealthCheckGaugeVec.WithLabelValues(sks...).Set(0)
+
+		hd.m.Lock()
+		defer hd.m.Unlock()
+		delete(hd.discoverPool[sks[0]], sks[1])
+	})
 	return hd
 }
 
 func (h *healthDot) report(region, ip, version string) {
 	h.m.Lock()
 	defer h.m.Unlock()
-	h.agentPool[region+defaultKeySeparator+ip+defaultKeySeparator+version] = time.Now()
+
+	key := region + defaultKeySeparator + ip + defaultKeySeparator + version
+	h.agentPool.SetDefault(key, nil)
 
 	// 将上报的agent region和ip存入
 	if ipm, ok := h.discoverPool[region]; ok {
@@ -52,22 +65,15 @@ func (h *healthDot) report(region, ip, version string) {
 
 func (h *healthDot) dot() {
 	util.Wait(h.cancel, h.expires, func() {
-		now := time.Now()
-		for agent, tm := range h.agentPool {
-			meta := strings.Split(agent, defaultKeySeparator)
-			region, ip, version := meta[0], meta[1], meta[2]
-			if now.Sub(tm) > h.expires {
-				agentHealthCheckGaugeVec.WithLabelValues(region, ip, version).Set(0)
-
-				h.m.Lock()
-				delete(h.agentPool, agent)
-				delete(h.discoverPool[region], ip)
-				h.m.Unlock()
-			} else {
-				agentHealthCheckGaugeVec.WithLabelValues(region, ip, version).Set(1)
-			}
+		for key := range h.agentPool.Items() {
+			agentHealthCheckGaugeVec.WithLabelValues(h.splitKey(key)...).Set(1)
 		}
 	})
+}
+
+func (h *healthDot) splitKey(key string) []string {
+	// region, ip, version
+	return strings.Split(key, defaultKeySeparator)
 }
 
 func getDiscoverPool() map[string]map[string]struct{} {
