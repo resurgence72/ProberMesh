@@ -19,10 +19,6 @@ type proberJob struct {
 	m sync.Mutex
 }
 
-const (
-	defaultKeySeparator = "_"
-)
-
 func (p *proberJob) run() {
 	ctx, _ := context.WithTimeout(context.TODO(), tm.refreshInterval)
 	pt := "icmp"
@@ -39,7 +35,8 @@ func (p *proberJob) jobExist(
 	targetRegion string,
 	proberTarget string,
 ) bool {
-	key := proberType + defaultKeySeparator + sourceRegion + defaultKeySeparator + targetRegion + defaultKeySeparator + proberTarget
+	s := util.DefaultKeySeparator
+	key := proberType + s + sourceRegion + s + targetRegion + s + proberTarget
 
 	p.m.Lock()
 	defer p.m.Unlock()
