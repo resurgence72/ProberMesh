@@ -5,42 +5,42 @@ import "github.com/prometheus/client_golang/prometheus"
 var (
 	namespace = "prober"
 
-	// server 接收到的上报数量
+	// server 接收到的上报数量  # 不考虑恢复
 	serverReceivePointsVec = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Name:      "server_receive_points",
 		Help:      "number of reported points received by the server",
 	}, []string{"prober_type"})
 
-	// icmp 探测失败数量
+	// icmp 探测失败数量 # 考虑恢复; agent下线后失败的series需要删除
 	icmpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_failed",
 		Help:      "icmp prober failed times",
 	}, []string{"source_region", "target_region"})
 
-	// icmp 分阶段耗时
+	// icmp 分阶段耗时  # 考虑恢复，agent下线后历史series需要删除
 	icmpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_duration_seconds",
 		Help:      "icmp prober duration by phase",
 	}, []string{"phase", "source_region", "target_region"})
 
-	// icmp 丢包率
+	// icmp 丢包率  # 考虑恢复，agent下线后历史series需要删除
 	icmpProberPacketLossRateGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_packet_loss_rate",
 		Help:      "icmp prober packet loss rate",
 	}, []string{"source_region", "target_region"})
 
-	// icmp 时延标准差 stddev
+	// icmp 时延标准差 stddev  # 考虑恢复，agent下线后历史series需要删除
 	icmpProberJitterStdDevGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "icmp_jitter_stddev_seconds",
 		Help:      "icmp prober network jitter std dev seconds",
 	}, []string{"source_region", "target_region"})
 
-	// icmp 总耗时分布
+	// icmp 总耗时分布 # 考虑恢复，agent下线后历史series需要删除
 	icmpProberDurationHistogramVec = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: namespace,
 		Name:      "icmp_duration_seconds_total",
@@ -49,21 +49,21 @@ var (
 		Buckets: prometheus.ExponentialBuckets(0.00005, 2, 19),
 	}, []string{"source_region", "target_region"})
 
-	// http 探测失败数量
+	// http 探测失败数量 # 考虑恢复，agent下线后历史series需要删除
 	httpProberFailedGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "http_failed",
 		Help:      "http prober failed times",
 	}, []string{"source_region", "target_addr", "failed_reason"})
 
-	// http 分阶段耗时
+	// http 分阶段耗时 # 考虑恢复，agent下线后历史series需要删除
 	httpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "http_duration_seconds",
 		Help:      "http prober duration by phase",
 	}, []string{"phase", "source_region", "target_addr"})
 
-	// agent 节点健康检查
+	// agent 节点健康检查   # 考虑恢复，agent下线后历史series需要重置为0
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "agent_is_alive",

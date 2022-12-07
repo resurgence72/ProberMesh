@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/patrickmn/go-cache"
 	"probermesh/pkg/util"
-	"strings"
 	"sync"
 	"time"
 )
@@ -13,6 +12,7 @@ type healthDot struct {
 	expires      time.Duration
 	agentPool    *cache.Cache
 	discoverPool map[string]map[string]struct{}
+	separator    string
 
 	cancel context.Context
 	ready  chan struct{}
@@ -28,11 +28,12 @@ func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{
 		discoverPool: make(map[string]map[string]struct{}),
 		cancel:       ctx,
 		ready:        ready,
+		separator:    util.DefaultKeySeparator,
 	}
 
 	// 过期时，打点0
 	hd.agentPool.OnEvicted(func(key string, i interface{}) {
-		sks := hd.splitKey(key)
+		sks := util.SplitKey(key)
 		agentHealthCheckGaugeVec.WithLabelValues(sks...).Set(0)
 
 		hd.m.Lock()
@@ -46,7 +47,7 @@ func (h *healthDot) report(region, ip, version string) {
 	h.m.Lock()
 	defer h.m.Unlock()
 
-	key := region + defaultKeySeparator + ip + defaultKeySeparator + version
+	key := region + h.separator + ip + h.separator + version
 	h.agentPool.SetDefault(key, nil)
 
 	// 将上报的agent region和ip存入
@@ -66,14 +67,9 @@ func (h *healthDot) report(region, ip, version string) {
 func (h *healthDot) dot() {
 	util.Wait(h.cancel, h.expires, func() {
 		for key := range h.agentPool.Items() {
-			agentHealthCheckGaugeVec.WithLabelValues(h.splitKey(key)...).Set(1)
+			agentHealthCheckGaugeVec.WithLabelValues(util.SplitKey(key)...).Set(1)
 		}
 	})
-}
-
-func (h *healthDot) splitKey(key string) []string {
-	// region, ip, version
-	return strings.Split(key, defaultKeySeparator)
 }
 
 func getDiscoverPool() map[string]map[string]struct{} {

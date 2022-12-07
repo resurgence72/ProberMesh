@@ -7,12 +7,14 @@ import (
 	"math/rand"
 	"net/http"
 	"probermesh/pkg/version"
+	"strings"
 	"time"
 )
 
 const (
 	jitter      = 50
 	ProjectName = "probermesh"
+	DefaultKeySeparator = "_"
 )
 
 // 设置随机延迟，防止并发探测量过大
@@ -46,4 +48,8 @@ func WithJSONHeader(f func(r *http.Request) []byte) func(http.ResponseWriter, *h
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(f(r))
 	}
+}
+
+func SplitKey(key string) []string {
+	return strings.Split(key, DefaultKeySeparator)
 }

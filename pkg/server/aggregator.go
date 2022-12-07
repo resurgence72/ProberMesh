@@ -2,20 +2,21 @@ package server
 
 import (
 	"context"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
+	"strings"
 	"sync"
 	"time"
 )
 
-const (
-	defaultKeySeparator = "_"
-)
-
 type Aggregator struct {
-	queue       [][]*pb.PorberResultReq
-	aggInterval time.Duration
+	queue           [][]*pb.PorberResultReq
+	aggInterval     time.Duration
+	httpMetricsHold *cache.Cache // hold 点，过期reason自动删除
+	icmpMetricsHold *cache.Cache // 过期icmp region自动删除
+	separator       string
 
 	cancel context.Context
 	m      sync.Mutex
@@ -37,10 +38,40 @@ type aggProberResult struct {
 var aggregator *Aggregator
 
 func newAggregator(ctx context.Context, interval time.Duration) *Aggregator {
+	// 构建cache
+	// 设置2倍agg频率，防止边界情况下拉取时被删除导致拉取不到正常上报数据
+	cacheInterval := 2 * interval
+	hmh := cache.New(cacheInterval, cacheInterval)
+	hmh.OnEvicted(func(key string, i interface{}) {
+		ks := util.SplitKey(key)
+
+		// 设置删除回调函数; 当此次agg周期内未上报相同key时，说明当前series已恢复，就不要再暴露这个series了
+		httpProberDurationGaugeVec.DeleteLabelValues(ks...)
+		httpProberFailedGaugeVec.DeleteLabelValues(ks...)
+	})
+
+	imh := cache.New(cacheInterval, cacheInterval)
+	imh.OnEvicted(func(key string, i interface{}) {
+		ks := util.SplitKey(key)
+
+		switch len(ks) {
+		case 2:
+			icmpProberFailedGaugeVec.DeleteLabelValues(ks...)
+			icmpProberPacketLossRateGaugeVec.DeleteLabelValues(ks...)
+			icmpProberJitterStdDevGaugeVec.DeleteLabelValues(ks...)
+			icmpProberDurationHistogramVec.DeleteLabelValues(ks...)
+		case 3:
+			icmpProberDurationGaugeVec.DeleteLabelValues(ks...)
+		}
+	})
+
 	aggregator = &Aggregator{
-		queue:       make([][]*pb.PorberResultReq, 0),
-		aggInterval: interval,
-		cancel:      ctx,
+		queue:           make([][]*pb.PorberResultReq, 0),
+		aggInterval:     interval,
+		cancel:          ctx,
+		httpMetricsHold: hmh,
+		icmpMetricsHold: imh,
+		separator:       util.DefaultKeySeparator,
 	}
 	return aggregator
 }
@@ -95,11 +126,11 @@ func (a *Aggregator) agg() {
 			if pt == "http" {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
-				key = pr.SourceRegion + defaultKeySeparator + pr.ProberTarget
+				key = pr.SourceRegion + a.separator + pr.ProberTarget
 			} else {
 				containers = icmpAggMap
 				phase = pr.ICMPDurations
-				key = pr.SourceRegion + defaultKeySeparator + pr.TargetRegion
+				key = pr.SourceRegion + a.separator + pr.TargetRegion
 			}
 
 			if _, ok := containers[key]; !ok {
@@ -144,30 +175,55 @@ func (a *Aggregator) agg() {
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for _, agg := range http {
-		httpProberFailedGaugeVec.WithLabelValues(
+		ks := []string{
 			agg.sourceRegion,
 			agg.targetAddr,
 			agg.failedReason,
-		).Set(float64(agg.failedCnt))
+		}
+
+		httpProberFailedGaugeVec.WithLabelValues(ks...).Set(float64(agg.failedCnt))
+
+		// reset http httpProberFailedGaugeVec指标的缓存
+		// 为什么要使用cache缓存，因为reason指标有状态，当reason过期是，需要删除old series；否则当前key的记录会一直被暴露
+		a.httpMetricsHold.SetDefault(
+			strings.Join(ks, util.DefaultKeySeparator),
+			nil,
+		)
 
 		for stage, total := range agg.phase {
-			// 每个 sR->tR 的每个stage的平均
-			httpProberDurationGaugeVec.WithLabelValues(
+			ks := []string{
 				stage,
 				agg.sourceRegion,
 				agg.targetAddr,
-			).Set(total / float64(agg.batchCnt))
+			}
+
+			// 每个 sR->tR 的每个stage的平均
+			httpProberDurationGaugeVec.WithLabelValues(ks...).Set(total / float64(agg.batchCnt))
+
+			// key不同(stage),需要另存一个key
+			a.httpMetricsHold.SetDefault(
+				strings.Join(ks, util.DefaultKeySeparator),
+				nil,
+			)
 		}
 	}
 }
 
 func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 	for _, agg := range icmp {
-		// 当前 r to r 存在探测失败任务,记录失败次数；没有失败的，打点0
-		icmpProberFailedGaugeVec.WithLabelValues(
+		ks := []string{
 			agg.sourceRegion,
 			agg.targetRegion,
-		).Set(float64(agg.failedCnt))
+		}
+
+		// 当前 r to r 存在探测失败任务,记录失败次数；没有失败的，打点0
+		icmpProberFailedGaugeVec.WithLabelValues(ks...).Set(float64(agg.failedCnt))
+
+		// cache icmp的key
+		a.icmpMetricsHold.SetDefault(
+			strings.Join(ks, util.DefaultKeySeparator),
+			nil,
+		)
 
 		var icmpDurationsTotal float64
 		for stage, total := range agg.phase {
@@ -176,32 +232,31 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 			switch stage {
 			case "loss":
 				// 单独打点丢包率指标
-				icmpProberPacketLossRateGaugeVec.WithLabelValues(
-					agg.sourceRegion,
-					agg.targetRegion,
-				).Set(stageAgg)
+				icmpProberPacketLossRateGaugeVec.WithLabelValues(ks...).Set(stageAgg)
 			case "stddev":
 				// 单独打点 stddev 抖动指标
-				icmpProberJitterStdDevGaugeVec.WithLabelValues(
-					agg.sourceRegion,
-					agg.targetRegion,
-				).Set(stageAgg)
+				icmpProberJitterStdDevGaugeVec.WithLabelValues(ks...).Set(stageAgg)
 			default:
-				// 每个 sR->tR 的每个stage的平均
-				icmpProberDurationGaugeVec.WithLabelValues(
+				ks := []string{
 					stage,
 					agg.sourceRegion,
 					agg.targetRegion,
-				).Set(stageAgg)
+				}
+				// 每个 sR->tR 的每个stage的平均
+				icmpProberDurationGaugeVec.WithLabelValues(ks...).Set(stageAgg)
+
+				// 由于label不同(stage),所以要另存一个key
+				a.icmpMetricsHold.SetDefault(
+					strings.Join(ks, util.DefaultKeySeparator),
+					nil,
+				)
+
 				icmpDurationsTotal += total
 			}
 		}
 
 		// 为 r->r 打点histogram
-		icmpProberDurationHistogramVec.WithLabelValues(
-			agg.sourceRegion,
-			agg.targetRegion,
-		).Observe(icmpDurationsTotal)
+		icmpProberDurationHistogramVec.WithLabelValues(ks...).Observe(icmpDurationsTotal)
 	}
 }
 
