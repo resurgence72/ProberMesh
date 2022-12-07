@@ -28,6 +28,8 @@ type SelfUpgrade struct {
 	m sync.RWMutex
 }
 
+type hook func() error
+
 var (
 	su         = newSelfUpgrade()
 	UpgradeMap map[string]struct{}
@@ -79,7 +81,7 @@ func (s *SelfUpgrade) AgentSetUpgraded(ident string) {
 	UpgradeMap[ident] = struct{}{}
 }
 
-func Upgrade(u, m string, hook func()) error {
+func Upgrade(u, m string, hooks ...hook) error {
 	// 下载二进制
 	logrus.Warnln("start download new version binary file")
 	resp, err := http.Get(u)
@@ -114,7 +116,15 @@ func Upgrade(u, m string, hook func()) error {
 
 	// kill
 	defer func() {
-		hook()
+		for i := range hooks {
+			if err = hooks[i](); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"idx":   i,
+					"error": err,
+				}).Errorln("upgrade pre kill hook func run failed")
+			}
+		}
+
 		pro, _ := os.FindProcess(os.Getpid())
 		pro.Signal(syscall.SIGTERM)
 	}()

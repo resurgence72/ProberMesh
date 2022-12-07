@@ -36,9 +36,10 @@ func (u *upgradeChecker) startUpgradeCheck() {
 		logrus.Warnln("agent begin start and check for upgraded")
 		if err := upgrade.Upgrade(
 			resp.DownloadURL,
-			resp.Md5Check, func() {
+			resp.Md5Check,
+			func() error {
 				// rpc上报更新成功的函数
-				_ = u.r.Call(
+				return u.r.Call(
 					"Server.SelfUpgradeSuccess",
 					req,
 					nil,
