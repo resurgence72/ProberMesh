@@ -9,7 +9,7 @@ import (
 )
 
 type ProberMeshAgentOption struct {
-	Addr,
+	ReportAddr,
 	PInterval,
 	SInterval,
 	UInterval,
@@ -19,7 +19,7 @@ type ProberMeshAgentOption struct {
 }
 
 func BuildAgentMode(ao *ProberMeshAgentOption) {
-	if len(ao.Addr) == 0 {
+	if len(ao.ReportAddr) == 0 {
 		log.Fatal("server addr must be set")
 	}
 
@@ -50,7 +50,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
 
-	cli := initRpcCli(ctxAll, ao.Addr)
+	cli := initRpcCli(ctxAll, ao.ReportAddr)
 	var g run.Group
 
 	// 上报后再manager.start()

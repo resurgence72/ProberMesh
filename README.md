@@ -97,7 +97,7 @@ Usage of ./probermesh:
         agent端是否开启自升级功能,默认关闭
     -agent.upgrade.interval string
         agent端检查upgrade周期; 仅在指定 -agent.upgrade 后生效 (default "1m")
-    -server.rpc.addr string
+    -agent.rpc.report.addr string
         server端RPC地址 (default "localhost:6000")
     
     
@@ -176,7 +176,7 @@ ICMP网格需求下:
 -agent.probe.interval=15s \
 -agent.sync.interval=1m \
 -agent.icmp.network-type=public \   # 2. 设置为公网模式
--server.rpc.addr=1.1.1.1:6000
+-agent.rpc.report.addr=1.1.1.1:6000
 
 
 ########### 场景二: 内网互通icmp拨测网格化 ###########
@@ -195,7 +195,7 @@ ICMP网格需求下:
 -agent.probe.interval=15s \
 -agent.sync.interval=1m \
 -agent.icmp.network-type=intranet \  # 2. 设置为内网模式
--server.rpc.addr=1.1.1.1:6000
+-agent.rpc.report.addr=1.1.1.1:6000
 
 
 ########### 场景三: 非网格化icmp拨测 / 通用http拨测 ###########
@@ -214,7 +214,7 @@ ICMP网格需求下:
 -agent.region=ali-cn-shanghai \
 -agent.probe.interval=15s \
 -agent.sync.interval=1m \
--server.rpc.addr=1.1.1.1:6000
+-agent.rpc.report.addr=1.1.1.1:6000
 
 
 
