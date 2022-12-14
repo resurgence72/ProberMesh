@@ -39,8 +39,8 @@ var aggregator *Aggregator
 
 func newAggregator(ctx context.Context, interval time.Duration) *Aggregator {
 	// 构建cache
-	// 设置2倍agg频率，防止边界情况下拉取时被删除导致拉取不到正常上报数据
-	cacheInterval := 2 * interval
+	// 设置10倍agg频率，防止边界情况下拉取时被删除导致拉取不到正常上报数据
+	cacheInterval := 10 * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
 	hmh.OnEvicted(func(key string, i interface{}) {
 		ks := util.SplitKey(key)
