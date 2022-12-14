@@ -174,7 +174,8 @@ func (a *Aggregator) agg() {
 }
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
-	for _, agg := range http {
+	for k := range http {
+		agg := http[k]
 		ks := []string{
 			agg.sourceRegion,
 			agg.targetAddr,
@@ -210,7 +211,8 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 }
 
 func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
-	for _, agg := range icmp {
+	for k := range icmp {
+		agg := icmp[k]
 		ks := []string{
 			agg.sourceRegion,
 			agg.targetRegion,
