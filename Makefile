@@ -1,6 +1,6 @@
 .PHONY: all build run gotool clean help
 
-BINARY="proberMesh"
+BINARY="probermesh"
 BINARY_DIR="./cmd/probermesh/"
 
 all: gotool build

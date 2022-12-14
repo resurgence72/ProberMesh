@@ -4,7 +4,9 @@
 ```text
 网格化探测通常是指各region/zone两两探测，形成一张 mesh 网格，通常是icmp探测的高阶需求;
 
-probermesh的优势
+
+probermesh 项目的优势
+0. server/agent 二合一，单二进制部署；
 1. 支持内网/公网模式下 icmp 自动发现，agent 一键部署自动加入 mesh 网格,不需要借助 consul 等额外组件;
 2. 支持同 region 下的容错性；这块很重要，同 region 下可以部署多 agent,防止由于单台 agent 网络问题造成的探测失败 -> 告警噪音；
    server会对同region下结果agg, 同region下agent越多，数据越准确，越稳定，容错率越高；
