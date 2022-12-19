@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"sync"
 	"time"
 )
@@ -377,7 +378,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
 		defaultICMPPorberResultReq = &pb.PorberResultReq{
-			ProberType:    "icmp",
+			ProberType:    util.ProbeICMPType,
 			ICMPDurations: make(map[string]float64),
 			SourceRegion:  sourceRegion,
 			TargetRegion:  targetRegion,

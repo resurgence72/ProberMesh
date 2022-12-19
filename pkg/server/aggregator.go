@@ -102,6 +102,8 @@ func (a *Aggregator) agg() {
 		*/
 		icmpAggMap = make(map[string]*aggProberResult)
 		httpAggMap = make(map[string]*aggProberResult)
+
+		httpDefaultFailedReason = "success"
 	)
 
 	a.m.Lock()
@@ -123,7 +125,7 @@ func (a *Aggregator) agg() {
 			// 打点上报数量counter
 			serverReceivePointsVec.WithLabelValues(pt).Inc()
 
-			if pt == "http" {
+			if pt == util.ProbeHTTPType {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
 				key = pr.SourceRegion + a.separator + pr.ProberTarget
@@ -139,6 +141,7 @@ func (a *Aggregator) agg() {
 					targetRegion: pr.TargetRegion,
 					targetAddr:   pr.ProberTarget,
 					phase:        make(map[string]float64),
+					failedReason: httpDefaultFailedReason,
 				}
 			}
 
@@ -158,7 +161,7 @@ func (a *Aggregator) agg() {
 			// 走到下面逻辑，说明当前探测失败
 
 			// 为http设定reason
-			if pt == "http" && len(pr.ProberFailedReason) > 0 && len(container.failedReason) == 0 {
+			if pt == util.ProbeHTTPType && len(pr.ProberFailedReason) > 0 && container.failedReason == httpDefaultFailedReason {
 				// 如果探测类型是 http ，并且当前存在失败信息，并且 failedReason还未初始化信息，这种情况下才去赋值
 				// 也就是说 这里只会获取第一次获取到的拨测失败信息
 				container.failedReason = pr.ProberFailedReason

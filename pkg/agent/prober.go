@@ -21,10 +21,10 @@ type proberJob struct {
 
 func (p *proberJob) run() {
 	ctx, _ := context.WithTimeout(context.TODO(), tm.refreshInterval)
-	pt := "icmp"
+	pt := util.ProbeICMPType
 
-	if p.proberType == "http" {
-		pt = "http"
+	if p.proberType == util.ProbeHTTPType {
+		pt = util.ProbeHTTPType
 	}
 	p.dispatch(ctx, pt)
 }
@@ -75,7 +75,7 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 			}
 
 			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
-			if pType == "icmp" {
+			if pType == util.ProbeICMPType {
 				ptsChan <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
 			} else {
 				ptsChan <- probeHTTP(ctx, target, p.sourceRegion, p.targetRegion)

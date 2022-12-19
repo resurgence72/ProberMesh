@@ -63,7 +63,7 @@ func (t *targetsPool) start() {
 			}
 		*/
 		// dynamic情况下忽略配置文件icmp target
-		if t.discovery == DynamicDiscovery && pc.ProberType == "icmp" {
+		if t.discovery == DynamicDiscovery && pc.ProberType == util.ProbeICMPType {
 			continue
 		}
 
@@ -83,7 +83,7 @@ func (t *targetsPool) updatePool() {
 
 	// 每分钟更新次pool值(根据agent上报)
 	util.Wait(t.done, time.Duration(1)*time.Minute, func() {
-		var updateKey = "icmp"
+		var updateKey = util.ProbeICMPType
 		for region, ipm := range getDiscoverPool() {
 			if len(ipm) == 0 {
 				// 当前region agent下线,则删除当前region下的icmp，防止后续继续同步

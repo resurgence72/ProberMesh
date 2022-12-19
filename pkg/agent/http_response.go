@@ -17,6 +17,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
 	"regexp"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		module    = buildDefaultHTTPProbe()
 
 		defaultHTTPProberResultReq = &pb.PorberResultReq{
-			ProberType:    "http",
+			ProberType:    util.ProbeHTTPType,
 			ProberTarget:  target,
 			LocalIP:       agentIP,
 			SourceRegion:  sourceRegion,

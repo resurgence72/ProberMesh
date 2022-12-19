@@ -16,7 +16,11 @@ import (
 )
 
 type ProberMeshServerOption struct {
-	TargetsConfigPath, ICMPDiscoveryType, HTTPListenAddr, RPCListenAddr, AggregationInterval string
+	TargetsConfigPath,
+	ICMPDiscoveryType,
+	HTTPListenAddr,
+	RPCListenAddr,
+	AggregationInterval string
 }
 
 func BuildServerMode(so *ProberMeshServerOption) {

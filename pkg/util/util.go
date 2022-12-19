@@ -12,8 +12,11 @@ import (
 )
 
 const (
-	jitter      = 50
-	ProjectName = "probermesh"
+	jitter = 50
+
+	ProjectName         = "probermesh"
+	ProbeHTTPType       = "http"
+	ProbeICMPType       = "icmp"
 	DefaultKeySeparator = "_"
 )
 
