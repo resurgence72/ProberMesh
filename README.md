@@ -157,6 +157,7 @@ http仅支持通过配置文件指定，不支持自动发现模式
 #### 效果展示
 
 ##### 1. ICMP 面板效果
+直接导入 ./build/grafana/probermesh-icmp.json 至 Grafana 即可使用
 
 > ICMP 拨测网格
 >
