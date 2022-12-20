@@ -132,7 +132,7 @@ func (a *Aggregator) agg() {
 			if pt == util.ProbeHTTPType {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
-				key = pr.SourceRegion + a.separator + pr.ProberTarget
+				key = pr.SourceRegion + a.separator + pr.TargetRegion + a.separator + pr.ProberTarget
 			} else {
 				containers = icmpAggMap
 				phase = pr.ICMPDurations
@@ -185,6 +185,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 		agg := http[k]
 		ks := []string{
 			agg.sourceRegion,
+			agg.targetRegion,
 			agg.targetAddr,
 			agg.failedReason,
 		}
@@ -202,6 +203,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			ks := []string{
 				stage,
 				agg.sourceRegion,
+				agg.targetRegion,
 				agg.targetAddr,
 			}
 

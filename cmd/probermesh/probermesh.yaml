@@ -1,6 +1,6 @@
 prober_configs:
   - prober_type: http
-    region: cn-beijing
+    region: project-01
     targets:
       - http://www.baidu.com
       - http://www.taobao.com

@@ -54,14 +54,14 @@ var (
 		Namespace: namespace,
 		Name:      "http_failed",
 		Help:      "http prober failed times",
-	}, []string{"source_region", "target_addr", "failed_reason"})
+	}, []string{"source_region", "target_region", "target_addr", "failed_reason"})
 
 	// http 分阶段耗时 # 考虑恢复，agent下线后历史series需要删除
 	httpProberDurationGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "http_duration_seconds",
 		Help:      "http prober duration by phase",
-	}, []string{"phase", "source_region", "target_addr"})
+	}, []string{"phase", "source_region", "target_region", "target_addr"})
 
 	// agent 节点健康检查   # 考虑恢复，agent下线后历史series需要重置为0
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
