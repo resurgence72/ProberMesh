@@ -21,8 +21,13 @@ type healthDot struct {
 
 var hd *healthDot
 
-func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{}) *healthDot {
-	cacheInterval := cacheDurationRatio * expires
+func newHealthDot(
+	ctx context.Context,
+	expires time.Duration,
+	ratio int,
+	ready chan struct{},
+	) *healthDot {
+	cacheInterval := time.Duration(ratio) * expires
 
 	hd = &healthDot{
 		expires:      expires,

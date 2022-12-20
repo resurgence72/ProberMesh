@@ -16,10 +16,11 @@ import (
 )
 
 type ProberMeshServerOption struct {
-	TargetsConfigPath,
-	ICMPDiscoveryType,
-	HTTPListenAddr,
-	RPCListenAddr,
+	TargetsConfigPath   string
+	ICMPDiscoveryType   string
+	HTTPListenAddr      string
+	RPCListenAddr       string
+	SeriesCacheRatio    int
 	AggregationInterval string
 }
 
@@ -66,7 +67,12 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	{
 		// 初始化targetsPool
 		g.Add(func() error {
-			newTargetsPool(ctxAll, config.Get(), ready, so.ICMPDiscoveryType).start()
+			newTargetsPool(
+				ctxAll,
+				config.Get(),
+				ready,
+				so.ICMPDiscoveryType,
+			).start()
 			return nil
 		}, func(err error) {
 			cancelAll()
@@ -76,7 +82,12 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	{
 		// health check 打点
 		g.Add(func() error {
-			newHealthDot(ctxAll, aggD, ready).dot()
+			newHealthDot(
+				ctxAll,
+				aggD,
+				so.SeriesCacheRatio,
+				ready,
+			).dot()
 			return nil
 		}, func(e error) {
 			cancelAll()
@@ -86,7 +97,11 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	{
 		// aggregation
 		g.Add(func() error {
-			newAggregator(ctxAll, aggD).startAggregation()
+			newAggregator(
+				ctxAll,
+				aggD,
+				so.SeriesCacheRatio,
+			).startAggregation()
 			return nil
 		}, func(err error) {
 			cancelAll()

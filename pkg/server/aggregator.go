@@ -37,12 +37,14 @@ type aggProberResult struct {
 
 var aggregator *Aggregator
 
-const cacheDurationRatio = 5  // 缓存时长倍率，超过 cacheDurationRatio*interval 的series会被清除掉
-
-func newAggregator(ctx context.Context, interval time.Duration) *Aggregator {
+func newAggregator(
+	ctx context.Context,
+	interval time.Duration,
+	ratio int,
+) *Aggregator {
 	// 构建cache
 	// 设置agg频率，防止边界情况下拉取时被删除导致拉取不到正常上报数据
-	cacheInterval := cacheDurationRatio * interval
+	cacheInterval := time.Duration(ratio) * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
 	hmh.OnEvicted(func(key string, i interface{}) {
 		ks := util.SplitKey(key)
