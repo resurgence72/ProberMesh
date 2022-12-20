@@ -22,7 +22,7 @@ type healthDot struct {
 var hd *healthDot
 
 func newHealthDot(ctx context.Context, expires time.Duration, ready chan struct{}) *healthDot {
-	cacheInterval := 10 * expires
+	cacheInterval := cacheDurationRatio * expires
 
 	hd = &healthDot{
 		expires:      expires,
