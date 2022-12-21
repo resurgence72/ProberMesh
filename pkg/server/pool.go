@@ -63,9 +63,9 @@ func (t *targetsPool) start() {
 			}
 		*/
 		// dynamic情况下忽略配置文件icmp target
-		if t.discovery == DynamicDiscovery && pc.ProberType == util.ProbeICMPType {
-			continue
-		}
+		//if t.discovery == DynamicDiscovery && pc.ProberType == util.ProbeICMPType {
+		//	continue
+		//}
 
 		if pcm, ok := t.pool[pc.Region]; ok {
 			pcm[pc.ProberType] = pc
