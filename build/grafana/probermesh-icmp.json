@@ -1,53 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_NETWORK_GROUP",
-      "label": "network_group",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
-  "__elements": [],
-  "__requires": [
-    {
-      "type": "grafana",
-      "id": "grafana",
-      "name": "Grafana",
-      "version": "8.5.11"
-    },
-    {
-      "type": "panel",
-      "id": "graph",
-      "name": "Graph (old)",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "piechart",
-      "name": "Pie chart",
-      "version": ""
-    },
-    {
-      "type": "datasource",
-      "id": "prometheus",
-      "name": "Prometheus",
-      "version": "1.0.0"
-    },
-    {
-      "type": "panel",
-      "id": "stat",
-      "name": "Stat",
-      "version": ""
-    },
-    {
-      "type": "panel",
-      "id": "table",
-      "name": "Table",
-      "version": ""
-    }
-  ],
   "annotations": {
     "list": [
       {
@@ -73,8 +24,8 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
-  "id": null,
-  "iteration": 1671430446685,
+  "id": 22,
+  "iteration": 1672198241049,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -98,7 +49,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fieldConfig": {
         "defaults": {
@@ -148,7 +99,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -166,7 +117,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fieldConfig": {
         "defaults": {
@@ -224,7 +175,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -245,7 +196,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -287,7 +238,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "expr": "prober_icmp_failed ",
@@ -301,7 +252,7 @@
       "title": "当前批次拨测失败数",
       "tooltip": {
         "shared": true,
-        "sort": 0,
+        "sort": 2,
         "value_type": "individual"
       },
       "type": "graph",
@@ -339,7 +290,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -379,11 +330,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
-          "expr": "sum(rate(prober_server_receive_points{}[1m]))",
-          "interval": "30s",
+          "expr": "sum(rate(prober_server_receive_points{}[5m]))",
+          "interval": "",
           "legendFormat": "report-tps",
           "range": true,
           "refId": "A"
@@ -406,7 +357,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:615",
-          "decimals": 1,
+          "decimals": 0,
           "format": "reqps",
           "logBase": 1,
           "show": true
@@ -425,7 +376,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fieldConfig": {
         "defaults": {
@@ -699,6 +650,7 @@
       "id": 31,
       "options": {
         "footer": {
+          "enablePagination": true,
           "fields": "",
           "reducer": [
             "sum"
@@ -718,7 +670,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "exemplar": true,
           "expr": "sum by (source_region,target_region) (prober_icmp_duration_seconds{source_region=~\"$source_region\",target_region=~\"$target_region\"})",
@@ -731,7 +683,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "exemplar": true,
           "expr": "prober_icmp_duration_seconds{phase=\"resolve\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
@@ -745,7 +697,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "exemplar": true,
           "expr": "prober_icmp_duration_seconds{phase=\"rtt\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
@@ -759,7 +711,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "exemplar": true,
           "expr": "prober_icmp_packet_loss_rate{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
@@ -773,7 +725,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -788,7 +740,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -803,7 +755,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -818,7 +770,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -912,7 +864,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "decimals": 0,
       "fill": 0,
@@ -956,7 +908,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1020,7 +972,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1064,7 +1016,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1131,7 +1083,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1175,7 +1127,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1225,7 +1177,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_NETWORK_GROUP}"
+        "uid": "s7PBkOc4k"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1269,7 +1221,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_NETWORK_GROUP}"
+            "uid": "s7PBkOc4k"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1316,15 +1268,22 @@
   "refresh": "30s",
   "schemaVersion": 36,
   "style": "dark",
-  "tags": [],
+  "tags": [
+    "probermesh",
+    "icmp"
+  ],
   "templating": {
     "list": [
       {
         "allValue": ".+",
-        "current": {},
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_NETWORK_GROUP}"
+          "uid": "s7PBkOc4k"
         },
         "definition": "label_values(prober_icmp_packet_loss_rate{source_region!~\"^icmp|^ICMP|^http|^HTTP\"},source_region)",
         "description": "源区域",
@@ -1348,10 +1307,18 @@
       },
       {
         "allValue": ".+",
-        "current": {},
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_NETWORK_GROUP}"
+          "uid": "s7PBkOc4k"
         },
         "definition": "label_values(prober_icmp_packet_loss_rate{source_region=~\"$source_region\",target_region!~\"^icmp|^ICMP|^http|^HTTP\"},target_region)",
         "description": "目的区域",
@@ -1389,6 +1356,6 @@
   "timezone": "",
   "title": "ICMP拨测",
   "uid": "lq87sNI4k",
-  "version": 53,
+  "version": 64,
   "weekStart": ""
 }
