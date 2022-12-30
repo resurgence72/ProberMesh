@@ -12,7 +12,6 @@ type healthDot struct {
 	expires      time.Duration
 	agentPool    *cache.Cache
 	discoverPool map[string]map[string]struct{}
-	separator    string
 
 	cancel context.Context
 	ready  chan struct{}
@@ -26,7 +25,7 @@ func newHealthDot(
 	expires time.Duration,
 	ratio int,
 	ready chan struct{},
-	) *healthDot {
+) *healthDot {
 	cacheInterval := time.Duration(ratio) * expires
 
 	hd = &healthDot{
@@ -35,7 +34,6 @@ func newHealthDot(
 		discoverPool: make(map[string]map[string]struct{}),
 		cancel:       ctx,
 		ready:        ready,
-		separator:    util.DefaultKeySeparator,
 	}
 
 	// 过期时，打点0
@@ -54,7 +52,7 @@ func (h *healthDot) report(region, ip, version string) {
 	h.m.Lock()
 	defer h.m.Unlock()
 
-	key := region + h.separator + ip + h.separator + version
+	key := util.JoinKey(region, ip, version)
 	h.agentPool.SetDefault(key, nil)
 
 	// 将上报的agent region和ip存入

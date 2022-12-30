@@ -20,7 +20,7 @@ func (u *upgradeChecker) startUpgradeCheck() {
 	resp := new(pb.UpgradeResp)
 	req := pb.UpgradeCheckReq{
 		Version: util.GetVersion(),
-		Ident:   region + util.DefaultKeySeparator + agentIP,
+		Ident:   util.JoinKey(region, agentIP),
 	}
 
 	if err := u.r.Call(

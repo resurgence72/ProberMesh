@@ -17,7 +17,7 @@ const (
 	ProjectName         = "probermesh"
 	ProbeHTTPType       = "http"
 	ProbeICMPType       = "icmp"
-	DefaultKeySeparator = "_"
+	defaultKeySeparator = "_"
 )
 
 // 设置随机延迟，防止并发探测量过大
@@ -54,5 +54,9 @@ func WithJSONHeader(f func(r *http.Request) []byte) func(http.ResponseWriter, *h
 }
 
 func SplitKey(key string) []string {
-	return strings.Split(key, DefaultKeySeparator)
+	return strings.Split(key, defaultKeySeparator)
+}
+
+func JoinKey(ks ...string) string {
+	return strings.Join(ks, defaultKeySeparator)
 }

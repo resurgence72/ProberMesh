@@ -35,8 +35,12 @@ func (p *proberJob) jobExist(
 	targetRegion string,
 	proberTarget string,
 ) bool {
-	s := util.DefaultKeySeparator
-	key := proberType + s + sourceRegion + s + targetRegion + s + proberTarget
+	key := util.JoinKey(
+		proberType,
+		sourceRegion,
+		targetRegion,
+		proberTarget,
+	)
 
 	p.m.Lock()
 	defer p.m.Unlock()

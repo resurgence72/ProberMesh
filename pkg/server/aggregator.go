@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
-	"strings"
 	"sync"
 	"time"
 )
@@ -16,7 +15,6 @@ type Aggregator struct {
 	aggInterval     time.Duration
 	httpMetricsHold *cache.Cache // hold 点，过期reason自动删除
 	icmpMetricsHold *cache.Cache // 过期icmp region自动删除
-	separator       string
 
 	cancel context.Context
 	m      sync.Mutex
@@ -75,7 +73,6 @@ func newAggregator(
 		cancel:          ctx,
 		httpMetricsHold: hmh,
 		icmpMetricsHold: imh,
-		separator:       util.DefaultKeySeparator,
 	}
 	return aggregator
 }
@@ -132,11 +129,18 @@ func (a *Aggregator) agg() {
 			if pt == util.ProbeHTTPType {
 				containers = httpAggMap
 				phase = pr.HTTPDurations
-				key = pr.SourceRegion + a.separator + pr.TargetRegion + a.separator + pr.ProberTarget
+				key = util.JoinKey(
+					pr.SourceRegion,
+					pr.TargetRegion,
+					pr.ProberTarget,
+				)
 			} else {
 				containers = icmpAggMap
 				phase = pr.ICMPDurations
-				key = pr.SourceRegion + a.separator + pr.TargetRegion
+				key = util.JoinKey(
+					pr.SourceRegion,
+					pr.TargetRegion,
+				)
 			}
 
 			if _, ok := containers[key]; !ok {
@@ -195,7 +199,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 		// reset http httpProberFailedGaugeVec指标的缓存
 		// 为什么要使用cache缓存，因为reason指标有状态，当reason过期是，需要删除old series；否则当前key的记录会一直被暴露
 		a.httpMetricsHold.SetDefault(
-			strings.Join(ks, util.DefaultKeySeparator),
+			util.JoinKey(ks...),
 			nil,
 		)
 
@@ -212,7 +216,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 			// key不同(stage),需要另存一个key
 			a.httpMetricsHold.SetDefault(
-				strings.Join(ks, util.DefaultKeySeparator),
+				util.JoinKey(ks...),
 				nil,
 			)
 		}
@@ -232,7 +236,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 
 		// cache icmp的key
 		a.icmpMetricsHold.SetDefault(
-			strings.Join(ks, util.DefaultKeySeparator),
+			util.JoinKey(ks...),
 			nil,
 		)
 
@@ -258,7 +262,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 
 				// 由于label不同(stage),所以要另存一个key
 				a.icmpMetricsHold.SetDefault(
-					strings.Join(ks, util.DefaultKeySeparator),
+					util.JoinKey(ks...),
 					nil,
 				)
 
