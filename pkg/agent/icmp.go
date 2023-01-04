@@ -75,7 +75,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 //
 //		defaultICMPPorberResultReq = &pb.PorberResultReq{
 //			ProberType:    "icmp",
-//			ICMPDurations: make(map[string]float64),
+//			ICMPFields: make(map[string]float64),
 //			SourceRegion:  sourceRegion,
 //			TargetRegion:  targetRegion,
 //			ProberTarget:  target,
@@ -91,7 +91,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 //	}
 //
 //	// 打点resolve
-//	defaultICMPPorberResultReq.ICMPDurations["resolve"] = lookupTime
+//	defaultICMPPorberResultReq.ICMPFields["resolve"] = lookupTime
 //
 //	var srcIP net.IP
 //	if len(module.SourceIPAddress) > 0 {
@@ -228,7 +228,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 //		return defaultICMPPorberResultReq
 //	}
 //
-//	defaultICMPPorberResultReq.ICMPDurations["setup"] = time.Since(setupStart).Seconds()
+//	defaultICMPPorberResultReq.ICMPFields["setup"] = time.Since(setupStart).Seconds()
 //	logrus.Debugln("msg", "Writing out packet")
 //
 //	rttStart := time.Now()
@@ -364,7 +364,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 //			rb[3] = 0
 //		}
 //		if bytes.Equal(rb[:n], wb) {
-//			defaultICMPPorberResultReq.ICMPDurations["rtt"] = time.Since(rttStart).Seconds()
+//			defaultICMPPorberResultReq.ICMPFields["rtt"] = time.Since(rttStart).Seconds()
 //			if hopLimit >= 0 {
 //				logrus.Debugln("Replied packet hop limit (TTL for ipv4): ", hopLimit)
 //			}
@@ -378,12 +378,12 @@ func buildDefaultICMPProbe() ICMPProbe {
 func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
 		defaultICMPPorberResultReq = &pb.PorberResultReq{
-			ProberType:    util.ProbeICMPType,
-			ICMPDurations: make(map[string]float64),
-			SourceRegion:  sourceRegion,
-			TargetRegion:  targetRegion,
-			ProberTarget:  target,
-			LocalIP:       agentIP,
+			ProberType:   util.ProbeICMPType,
+			ICMPFields:   make(map[string]float64),
+			SourceRegion: sourceRegion,
+			TargetRegion: targetRegion,
+			ProberTarget: target,
+			LocalIP:      agentIP,
 		}
 		pinger = ping.New(target)
 	)
@@ -403,13 +403,13 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		return defaultICMPPorberResultReq
 	}
 
-	defaultICMPPorberResultReq.ICMPDurations["resolve"] = time.Now().Sub(nslookup).Seconds()
+	defaultICMPPorberResultReq.ICMPFields["resolve"] = time.Now().Sub(nslookup).Seconds()
 	pinger.OnFinish = func(stats *ping.Statistics) {
 		if stats.PacketLoss < 100 {
 			defaultICMPPorberResultReq.ProberSuccess = true
-			defaultICMPPorberResultReq.ICMPDurations["loss"] = stats.PacketLoss
-			defaultICMPPorberResultReq.ICMPDurations["rtt"] = stats.AvgRtt.Seconds()
-			defaultICMPPorberResultReq.ICMPDurations["stddev"] = stats.StdDevRtt.Seconds()
+			defaultICMPPorberResultReq.ICMPFields["loss"] = stats.PacketLoss
+			defaultICMPPorberResultReq.ICMPFields["rtt"] = stats.AvgRtt.Seconds()
+			defaultICMPPorberResultReq.ICMPFields["stddev"] = stats.StdDevRtt.Seconds()
 		}
 	}
 

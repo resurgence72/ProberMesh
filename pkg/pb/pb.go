@@ -39,10 +39,13 @@ type PorberResultReq struct {
 	ProberFailedReason string
 
 	// icmp的字段 resolve setup rtt
-	ICMPDurations map[string]float64
+	ICMPFields map[string]float64
 
 	// http字段
-	HTTPDurations map[string]float64
+	HTTPFields map[string]float64
+
+	// tls字段
+	TLSFields map[string]string
 }
 
 type UpgradeCheckReq struct {

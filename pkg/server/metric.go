@@ -63,6 +63,13 @@ var (
 		Help:      "http prober duration by phase",
 	}, []string{"phase", "source_region", "target_region", "target_addr"})
 
+	// http 证书过期信息 # 考虑恢复，agent下线后历史series需要删除
+	httpSSLEarliestCertExpiryGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace:namespace,
+		Name:"http_ssl_earliest_cert_expiry",
+		Help:"https last SSL chain expiry in unixtime",
+	},[]string{"source_region", "target_region", "target_addr", "version"})
+
 	// agent 节点健康检查   # 考虑恢复，agent下线后历史series需要重置为0
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
@@ -81,4 +88,5 @@ func init() {
 	prometheus.MustRegister(httpProberDurationGaugeVec)
 	prometheus.MustRegister(serverReceivePointsVec)
 	prometheus.MustRegister(agentHealthCheckGaugeVec)
+	prometheus.MustRegister(httpSSLEarliestCertExpiryGaugeVec)
 }

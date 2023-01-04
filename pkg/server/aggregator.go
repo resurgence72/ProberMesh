@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -21,11 +22,13 @@ type Aggregator struct {
 }
 
 type aggProberResult struct {
-	sourceRegion string // icmp 使用
-	targetRegion string // icmp 使用
+	sourceRegion string
+	targetRegion string
 
 	targetAddr   string // http 使用
 	failedReason string //http 使用
+	tlsVersion   string //http 使用
+	tlsExpiry    int64  //http 使用
 
 	batchCnt int64 // cnt算avg
 
@@ -45,8 +48,11 @@ func newAggregator(
 	cacheInterval := time.Duration(ratio) * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
 	hmh.OnEvicted(func(key string, i interface{}) {
-		ks := util.SplitKey(key)
+		defer func() {
+			_ = recover()
+		}()
 
+		ks := util.SplitKey(key)
 		// 设置删除回调函数; 当此次agg周期内未上报相同key时，说明当前series已恢复，就不要再暴露这个series了
 		httpProberDurationGaugeVec.DeleteLabelValues(ks...)
 		httpProberFailedGaugeVec.DeleteLabelValues(ks...)
@@ -54,17 +60,17 @@ func newAggregator(
 
 	imh := cache.New(cacheInterval, cacheInterval)
 	imh.OnEvicted(func(key string, i interface{}) {
-		ks := util.SplitKey(key)
+		defer func() {
+			// 由于标签数量不同导致prom-go-sdk报错
+			_ = recover()
+		}()
 
-		switch len(ks) {
-		case 2:
-			icmpProberFailedGaugeVec.DeleteLabelValues(ks...)
-			icmpProberPacketLossRateGaugeVec.DeleteLabelValues(ks...)
-			icmpProberJitterStdDevGaugeVec.DeleteLabelValues(ks...)
-			icmpProberDurationHistogramVec.DeleteLabelValues(ks...)
-		case 3:
-			icmpProberDurationGaugeVec.DeleteLabelValues(ks...)
-		}
+		ks := util.SplitKey(key)
+		icmpProberFailedGaugeVec.DeleteLabelValues(ks...)
+		icmpProberPacketLossRateGaugeVec.DeleteLabelValues(ks...)
+		icmpProberJitterStdDevGaugeVec.DeleteLabelValues(ks...)
+		icmpProberDurationHistogramVec.DeleteLabelValues(ks...)
+		icmpProberDurationGaugeVec.DeleteLabelValues(ks...)
 	})
 
 	aggregator = &Aggregator{
@@ -128,7 +134,7 @@ func (a *Aggregator) agg() {
 
 			if pt == util.ProbeHTTPType {
 				containers = httpAggMap
-				phase = pr.HTTPDurations
+				phase = pr.HTTPFields
 				key = util.JoinKey(
 					pr.SourceRegion,
 					pr.TargetRegion,
@@ -136,7 +142,7 @@ func (a *Aggregator) agg() {
 				)
 			} else {
 				containers = icmpAggMap
-				phase = pr.ICMPDurations
+				phase = pr.ICMPFields
 				key = util.JoinKey(
 					pr.SourceRegion,
 					pr.TargetRegion,
@@ -164,11 +170,18 @@ func (a *Aggregator) agg() {
 				for stage, val := range phase {
 					container.phase[stage] += val
 				}
+
+				// 处理tls
+				if len(pr.TLSFields) > 0 && container.tlsExpiry == 0 && len(container.tlsVersion) == 0 {
+					container.tlsVersion = pr.TLSFields["version"]
+					expiry, _ := strconv.ParseInt(pr.TLSFields["expiry"], 10, 64)
+					container.tlsExpiry = expiry
+				}
 				continue
 			}
 			// 走到下面逻辑，说明当前探测失败
 
-			// 为http设定reason
+			// 为http设定failed
 			if pt == util.ProbeHTTPType && len(pr.ProberFailedReason) > 0 && container.failedReason == httpDefaultFailedReason {
 				// 如果探测类型是 http ，并且当前存在失败信息，并且 failedReason还未初始化信息，这种情况下才去赋值
 				// 也就是说 这里只会获取第一次获取到的拨测失败信息
@@ -187,13 +200,27 @@ func (a *Aggregator) agg() {
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 	for k := range http {
 		agg := http[k]
+
+		if len(agg.tlsVersion) > 0 && agg.tlsExpiry != 0 {
+			ks := []string{
+				agg.sourceRegion,
+				agg.targetRegion,
+				agg.targetAddr,
+				agg.tlsVersion,
+			}
+			httpSSLEarliestCertExpiryGaugeVec.WithLabelValues(ks...).Set(float64(agg.tlsExpiry))
+			a.httpMetricsHold.SetDefault(
+				util.JoinKey(ks...),
+				nil,
+			)
+		}
+
 		ks := []string{
 			agg.sourceRegion,
 			agg.targetRegion,
 			agg.targetAddr,
 			agg.failedReason,
 		}
-
 		httpProberFailedGaugeVec.WithLabelValues(ks...).Set(float64(agg.failedCnt))
 
 		// reset http httpProberFailedGaugeVec指标的缓存
@@ -213,7 +240,6 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 			// 每个 sR->tR 的每个stage的平均
 			httpProberDurationGaugeVec.WithLabelValues(ks...).Set(total / float64(agg.batchCnt))
-
 			// key不同(stage),需要另存一个key
 			a.httpMetricsHold.SetDefault(
 				util.JoinKey(ks...),

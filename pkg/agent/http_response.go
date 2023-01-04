@@ -19,6 +19,7 @@ import (
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -76,12 +77,13 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		module    = buildDefaultHTTPProbe()
 
 		defaultHTTPProberResultReq = &pb.PorberResultReq{
-			ProberType:    util.ProbeHTTPType,
-			ProberTarget:  target,
-			LocalIP:       agentIP,
-			SourceRegion:  sourceRegion,
-			TargetRegion:  targetRegion,
-			HTTPDurations: make(map[string]float64),
+			ProberType:   util.ProbeHTTPType,
+			ProberTarget: target,
+			LocalIP:      agentIP,
+			SourceRegion: sourceRegion,
+			TargetRegion: targetRegion,
+			HTTPFields:   make(map[string]float64),
+			TLSFields:    make(map[string]string),
 		}
 	)
 
@@ -105,7 +107,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	var lookupTime float64
 	ip, lookupTime, err = chooseProtocol(ctx, module.IPProtocol, module.IPProtocolFallback, targetHost)
 
-	defaultHTTPProberResultReq.HTTPDurations["resolve"] = lookupTime
+	defaultHTTPProberResultReq.HTTPFields["resolve"] = lookupTime
 	if err != nil {
 		logrus.Errorln("resolve err ", err)
 		defaultHTTPProberResultReq.ProberFailedReason = err.Error()
@@ -356,7 +358,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		)
 		// We get the duration for the first request from chooseProtocol.
 		if i != 0 {
-			defaultHTTPProberResultReq.HTTPDurations["resolve"] = trace.dnsDone.Sub(trace.start).Seconds()
+			defaultHTTPProberResultReq.HTTPFields["resolve"] = trace.dnsDone.Sub(trace.start).Seconds()
 		}
 		// Continue here if we never got a connection because a request failed.
 		if trace.gotConn.IsZero() {
@@ -364,24 +366,29 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		}
 		if trace.tls {
 			// dnsDone must be set if gotConn was set.
-			defaultHTTPProberResultReq.HTTPDurations["connect"] = trace.connectDone.Sub(trace.dnsDone).Seconds()
-			defaultHTTPProberResultReq.HTTPDurations["tls"] = trace.tlsDone.Sub(trace.tlsStart).Seconds()
+			defaultHTTPProberResultReq.HTTPFields["connect"] = trace.connectDone.Sub(trace.dnsDone).Seconds()
+			defaultHTTPProberResultReq.HTTPFields["tls"] = trace.tlsDone.Sub(trace.tlsStart).Seconds()
+
+			// tls info
+			defaultHTTPProberResultReq.TLSFields["version"] = getTLSVersion(resp.TLS)
+			defaultHTTPProberResultReq.TLSFields["expiry"] = strconv.FormatInt(getEarliestCertExpiry(resp.TLS).Unix(), 10)
+
 		} else {
-			defaultHTTPProberResultReq.HTTPDurations["connect"] = trace.gotConn.Sub(trace.dnsDone).Seconds()
+			defaultHTTPProberResultReq.HTTPFields["connect"] = trace.gotConn.Sub(trace.dnsDone).Seconds()
 		}
 
 		// Continue here if we never got a response from the server.
 		if trace.responseStart.IsZero() {
 			continue
 		}
-		defaultHTTPProberResultReq.HTTPDurations["processing"] = trace.responseStart.Sub(trace.gotConn).Seconds()
+		defaultHTTPProberResultReq.HTTPFields["processing"] = trace.responseStart.Sub(trace.gotConn).Seconds()
 
 		// Continue here if we never read the full response from the server.
 		// Usually this means that request either failed or was redirected.
 		if trace.end.IsZero() {
 			continue
 		}
-		defaultHTTPProberResultReq.HTTPDurations["transfer"] = trace.end.Sub(trace.responseStart).Seconds()
+		defaultHTTPProberResultReq.HTTPFields["transfer"] = trace.end.Sub(trace.responseStart).Seconds()
 	}
 
 	if resp.TLS != nil {
