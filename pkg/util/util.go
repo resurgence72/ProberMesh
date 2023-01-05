@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	jitter = 50
+	jitter = 100
 
 	ProjectName         = "probermesh"
 	ProbeHTTPType       = "http"
