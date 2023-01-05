@@ -66,7 +66,7 @@ func getPublicIP() string {
 		ctx,
 		"bash",
 		"-c",
-		"curl -s ifconfig.me",
+		"/usr/bin/curl -s ifconfig.me",
 	)
 	bs, err := cmd.CombinedOutput()
 	if err != nil {
