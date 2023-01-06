@@ -47,6 +47,7 @@ prober_icmp_duration_seconds_total # icmp拨测耗时分布 histogram
 # http 指标
 prober_http_failed  # http当前拨测失败数 gauge
 prober_http_duration_seconds  # http拨测分阶段耗时 gauge
+prober_http_ssl_earliest_cert_expiry  # tls指标
 
 # 健康检查
 prober_agent_is_alive  # agent存活情况 gauge
