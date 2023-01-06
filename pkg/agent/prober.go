@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"github.com/sirupsen/logrus"
-	"math"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 	"sync"
@@ -19,8 +18,6 @@ type proberJob struct {
 
 	m sync.Mutex
 }
-
-var proberTimeout = time.Duration(math.Ceil(tm.refreshInterval.Seconds()*8/10)) * time.Second
 
 func (p *proberJob) run() {
 	ctx, _ := context.WithTimeout(context.TODO(), proberTimeout)

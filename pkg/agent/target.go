@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
+	"math"
 	"probermesh/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
@@ -21,7 +22,10 @@ type targetManager struct {
 	ready, beforeReady chan struct{}
 }
 
-var tm *targetManager
+var (
+	tm            *targetManager
+	proberTimeout time.Duration
+)
 
 func NewTargetManager(
 	region string,
@@ -38,6 +42,8 @@ func NewTargetManager(
 		ready:           make(chan struct{}),
 		beforeReady:     br,
 	}
+
+	proberTimeout = time.Duration(math.Ceil(tm.refreshInterval.Seconds()*8/10)) * time.Second
 
 	tm.selfRegion = getSelfRegion(region)
 	return tm
