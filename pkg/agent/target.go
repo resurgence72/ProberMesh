@@ -17,7 +17,9 @@ type targetManager struct {
 	refreshInterval time.Duration
 	syncInterval    time.Duration
 	currents        map[string]struct{}
+	ptsChan         chan *pb.PorberResultReq
 	selfRegion      string
+	ctx             context.Context
 
 	ready, beforeReady chan struct{}
 }
@@ -28,17 +30,21 @@ var (
 )
 
 func NewTargetManager(
+	ctx context.Context,
 	region string,
 	pInterval,
 	sInterval time.Duration,
 	r *rpcCli,
 	br chan struct{},
+	ptsChan chan *pb.PorberResultReq,
 ) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
+		ptsChan:         ptsChan,
 		refreshInterval: pInterval,
 		syncInterval:    sInterval,
 		r:               r,
+		ctx:             ctx,
 		ready:           make(chan struct{}),
 		beforeReady:     br,
 	}
@@ -49,11 +55,11 @@ func NewTargetManager(
 	return tm
 }
 
-func (t *targetManager) start(ctx context.Context) {
+func (t *targetManager) start() {
 	<-t.beforeReady
 
 	// 定时获取targets
-	go util.Wait(ctx, t.syncInterval, func() {
+	go util.Wait(t.ctx, t.syncInterval, func() {
 		t.getTargets()
 
 		if t.ready != nil {
@@ -64,8 +70,11 @@ func (t *targetManager) start(ctx context.Context) {
 
 	<-t.ready
 
+	// 定时上报
+	go t.batchSend()
+
 	// 定时探测
-	util.Wait(ctx, t.refreshInterval, t.prober)
+	util.Wait(t.ctx, t.refreshInterval, t.prober)
 }
 
 func (t *targetManager) prober() {
@@ -76,11 +85,38 @@ func (t *targetManager) prober() {
 				targets:      tt.Targets,
 				sourceRegion: t.selfRegion,
 				targetRegion: region,
+				ch:           t.ptsChan,
 				r:            t.r,
 			}
-			pj.run()
+			go pj.run()
 		}
 	}
+}
+
+func (t *targetManager) batchSend() {
+	var pts []*pb.PorberResultReq
+
+	go func() {
+		for pt := range t.ptsChan {
+			pts = append(pts, pt)
+		}
+	}()
+
+	util.Wait(t.ctx, t.refreshInterval, func() {
+		if len(pts) == 0 {
+			return
+		}
+
+		if err := t.r.Call(
+			"Server.ProberResultReport",
+			pts,
+			nil,
+		); err != nil {
+			logrus.Errorln("prober report failed ", err)
+		}
+
+		pts = pts[:0]
+	})
 }
 
 func (t *targetManager) getTargets() {

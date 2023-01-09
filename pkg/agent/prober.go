@@ -15,6 +15,7 @@ type proberJob struct {
 	sourceRegion string
 	targetRegion string
 	r            *rpcCli
+	ch           chan *pb.PorberResultReq
 
 	m sync.Mutex
 }
@@ -56,11 +57,7 @@ func (p *proberJob) jobExist(
 }
 
 func (p *proberJob) dispatch(ctx context.Context, pType string) {
-	var (
-		ptsChan = make(chan *pb.PorberResultReq, len(p.targets))
-		pts     = make([]*pb.PorberResultReq, 0, len(p.targets))
-		wg      sync.WaitGroup
-	)
+	var wg sync.WaitGroup
 
 	for _, target := range p.targets {
 		wg.Add(1)
@@ -80,32 +77,13 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 
 			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
 			if pType == util.ProbeICMPType {
-				ptsChan <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
+				p.ch <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
 			} else {
-				ptsChan <- probeHTTP(ctx, target, p.sourceRegion, p.targetRegion)
+				p.ch <- probeHTTP(ctx, target, p.sourceRegion, p.targetRegion)
 			}
-			time.Sleep(1 * time.Second)
 		}(target)
 	}
 
-	go func() {
-		wg.Wait()
-		close(ptsChan)
-		tm.currents = nil
-	}()
-
-	for pt := range ptsChan {
-		pts = append(pts, pt)
-	}
-
-	// batch send
-	go func(pts []*pb.PorberResultReq) {
-		if err := p.r.Call(
-			"Server.ProberResultReport",
-			pts,
-			nil,
-		); err != nil {
-			logrus.Errorln("prober report failed ", err)
-		}
-	}(pts)
+	wg.Wait()
+	tm.currents = nil
 }

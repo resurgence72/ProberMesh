@@ -5,6 +5,7 @@ import (
 	"github.com/oklog/run"
 	"github.com/sirupsen/logrus"
 	"log"
+	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 )
 
@@ -55,20 +56,26 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 
 	// 上报后再manager.start()
 	beforeReady := make(chan struct{})
+
+	ptsChan := make(chan *pb.PorberResultReq, 10)
 	{
 		// 定时拉取mesh poll
 		manager := NewTargetManager(
+			ctxAll,
 			ao.Region,
 			pDuration,
 			sDuration,
 			cli,
 			beforeReady,
+			ptsChan,
 		)
 		g.Add(func() error {
-			manager.start(ctxAll)
+			manager.start()
 			return nil
 		}, func(err error) {
 			cancelAll()
+			close(ptsChan)
+			close(beforeReady)
 		})
 	}
 
