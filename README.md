@@ -118,6 +118,8 @@ Usage of ./probermesh:
          (default "dynamic")
     -server.probe.file string
         server端探测列表文件路径
+    -server.series.cache.ratio int
+        server指标缓存时长重置倍率 (default 5)
    
   
 
