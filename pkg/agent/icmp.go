@@ -44,7 +44,7 @@ var (
 	icmpSequenceMutex        sync.Mutex
 	defaultICMPTTL           = 64
 	defaultICMPSize          = 64
-	defaultICMPCount         = 50
+	defaultICMPCount         = 64
 	defaultICMPFloodInterval = time.Duration(15) * time.Millisecond
 )
 
@@ -404,12 +404,10 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 
 	defaultICMPPorberResultReq.ICMPFields["resolve"] = time.Now().Sub(nslookup).Seconds()
 	pinger.OnFinish = func(stats *ping.Statistics) {
-		if stats.PacketLoss < 100 {
-			defaultICMPPorberResultReq.ProberSuccess = true
-			defaultICMPPorberResultReq.ICMPFields["loss"] = stats.PacketLoss
-			defaultICMPPorberResultReq.ICMPFields["rtt"] = stats.AvgRtt.Seconds()
-			defaultICMPPorberResultReq.ICMPFields["stddev"] = stats.StdDevRtt.Seconds()
-		}
+		defaultICMPPorberResultReq.ProberSuccess = true
+		defaultICMPPorberResultReq.ICMPFields["loss"] = stats.PacketLoss
+		defaultICMPPorberResultReq.ICMPFields["rtt"] = stats.AvgRtt.Seconds()
+		defaultICMPPorberResultReq.ICMPFields["stddev"] = stats.StdDevRtt.Seconds()
 	}
 
 	if err := pinger.Run(); err != nil {
