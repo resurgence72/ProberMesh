@@ -82,6 +82,22 @@ func (s *SelfUpgrade) AgentSetUpgraded(ident string) {
 }
 
 func Upgrade(u, m string, hooks ...hook) error {
+	defer func() {
+		for i := range hooks {
+			if err := hooks[i](); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"idx":   i,
+					"error": err,
+				}).Errorln("upgrade pre kill hook func run failed")
+			}
+		}
+
+		// kill
+		logrus.Warnln("start kill old process")
+		pro, _ := os.FindProcess(os.Getpid())
+		pro.Signal(syscall.SIGTERM)
+	}()
+
 	// 下载二进制
 	logrus.Warnln("start download new version binary file")
 	resp, err := http.Get(u)
@@ -112,23 +128,6 @@ func Upgrade(u, m string, hooks ...hook) error {
 	if err != nil {
 		return errors.New("upgrade ioutil WriteFile failed")
 	}
-	logrus.Warnln("upgrade check success, upgrading")
 
-	// kill
-	defer func() {
-		for i := range hooks {
-			if err = hooks[i](); err != nil {
-				logrus.WithFields(logrus.Fields{
-					"idx":   i,
-					"error": err,
-				}).Errorln("upgrade pre kill hook func run failed")
-			}
-		}
-
-		pro, _ := os.FindProcess(os.Getpid())
-		pro.Signal(syscall.SIGTERM)
-	}()
-
-	logrus.Warnln("start kill old process")
 	return nil
 }
