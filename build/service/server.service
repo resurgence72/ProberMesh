@@ -1,0 +1,22 @@
+[Unit]
+Description=proberMesh server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+SyslogIdentifier=proberMeshServer
+ExecStart=/data/service/proberMesh
+WorkingDirectory=/data/service/
+ExecStart=/data/service/proberMesh -mode server -server.aggregation.interval 15s -server.http.listen.addr localhost:6001 -server.rpc.listen.addr localhost:6000 -server.icmp.discovery static -server.probe.file ./prober_mesh.yaml
+
+User=root
+Group=root
+Type=simple
+StandardOutput=syslog
+StandardError=syslog
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target

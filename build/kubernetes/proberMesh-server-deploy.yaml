@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probermesh-server-deploy
+  namespace: ops-sre
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: probermesh-server-deploy
+  template:
+    metadata:
+      labels:
+        name: probermesh-server-deploy
+    spec:
+      nodeSelector:
+        project: "jczc"
+      imagePullSecrets:
+        # secret 需要创建
+        - name: alicloud-hub
+      volumes:
+        - name: probermesh-cfg
+          configMap:
+            name: probermesh-cfg
+      containers:
+        - name: probermesh
+          args:
+            - -mode=server
+            - -server.icmp.discovery=static
+            - -server.rpc.listen.addr=0.0.0.0:6000
+            - -server.http.listen.addr=0.0.0.0:6001
+            - -server.aggregation.interval=15s
+            - -server.probe.file=/opt/app/probermesh.yaml
+          image: boker-hub-registry.cn-shanghai.cr.aliyuncs.com/ops/probermesh:v0.0.1
+          imagePullPolicy: Always
+          ports:
+            # 容器内部端口 targetPort 映射 containerPort
+            # targetPort和containerPort必须一致
+            - containerPort: 6000
+            - containerPort: 6001
+          resources:
+            limits:
+              cpu: "300m"
+              memory: "300Mi"
+            requests:
+              cpu: "300m"
+              memory: "300Mi"
+          livenessProbe:
+            tcpSocket:
+              port: 6000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 6000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - mountPath: /opt/app/probermesh.yaml
+              subPath: probermesh.yaml
+              name: probermesh-cfg
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: probermesh-cfg
+  namespace: ops-sre
+data:
+  probermesh.yaml: |
+    prober_configs:
+      - prober_type: http
+        region: ap-southeast-5
+        targets:
+          - www.baidu.com
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: probermesh-svc-rpc
+  namespace: ops-sre
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6000
+      name: rpc
+      targetPort: 6000
+  selector:
+    name: probermesh-server-deploy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: probermesh-svc-http
+  namespace: ops-sre
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6001
+      name: metric
+      # 容器内部端口
+      targetPort: 6001
+  selector:
+    name: probermesh-server-deploy

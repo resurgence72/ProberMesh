@@ -1,0 +1,22 @@
+[Unit]
+Description=proberMesh agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+SyslogIdentifier=proberMeshAgent
+ExecStart=/data/service/proberMesh
+WorkingDirectory=/data/service/
+ExecStart=/data/service/proberMesh -mode agent -agent.probe.interval 15s -agent.sync.interval 1m
+
+User=root
+Group=root
+Type=simple
+StandardOutput=syslog
+StandardError=syslog
+Restart=always
+RestartSec=1
+StartLimitInterval=0
+
+[Install]
+WantedBy=multi-user.target
