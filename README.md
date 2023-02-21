@@ -168,10 +168,7 @@ http仅支持通过配置文件指定，不支持自动发现模式
 直接导入 ./build/grafana/probermesh-icmp.json 至 Grafana 即可使用
 
 > ICMP 拨测网格
->
-> ![](image/image-20221214214703117.png)
->
-> ![image-20221214220655978](image/image-20221214220655978.png)
+
 
 ##### 2. HTTP 面板效果
 
