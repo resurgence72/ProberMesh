@@ -70,6 +70,11 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	// 首次上报后 再updatePool,否则update不到数据
 	ready := make(chan struct{})
 	{
+		if so.ProbeSelf {
+			proberMeshServerProbeSelfEnabledGauge.Set(1)
+		} else {
+			proberMeshServerProbeSelfEnabledGauge.Set(0)
+		}
 		// 初始化targetsPool
 		g.Add(func() error {
 			newTargetsPool(
@@ -123,8 +128,10 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		mux.HandleFunc("/-/upgrade", util.WithJSONHeader(update))
 		if so.TaskEnabled {
 			logrus.Warnln("open server task dispatch functions")
+			proberMeshServerTaskEnabledGauge.Set(1)
 			mux.HandleFunc("/-/task", util.WithJSONHeader(tg.task))
 		} else {
+			proberMeshServerTaskEnabledGauge.Set(0)
 			mux.HandleFunc("/-/task", util.WithJSONHeader(func(r *http.Request) []byte {
 				bs, _ := json.Marshal(map[string]interface{}{
 					"code": -1,

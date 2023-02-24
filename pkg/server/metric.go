@@ -65,10 +65,10 @@ var (
 
 	// http 证书过期信息 # 考虑恢复，agent下线后历史series需要删除
 	httpSSLEarliestCertExpiryGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace:namespace,
-		Name:"http_ssl_earliest_cert_expiry",
-		Help:"https last SSL chain expiry in unixtime",
-	},[]string{"source_region", "target_region", "target_addr", "version"})
+		Namespace: namespace,
+		Name:      "http_ssl_earliest_cert_expiry",
+		Help:      "https last SSL chain expiry in unixtime",
+	}, []string{"source_region", "target_region", "target_addr", "version"})
 
 	// agent 节点健康检查   # 考虑恢复，agent下线后历史series需要重置为0
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -76,6 +76,18 @@ var (
 		Name:      "agent_is_alive",
 		Help:      "proberMesh agent is alive",
 	}, []string{"region", "ip", "version"})
+
+	proberMeshServerTaskEnabledGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "prober_mesh_server_task_enabled",
+		Help:      "proberMesh server whether allow task module",
+	})
+
+	proberMeshServerProbeSelfEnabledGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "prober_mesh_server_probe_self_enabled",
+		Help:      "proberMesh server whether allow probe.self module",
+	})
 )
 
 func init() {
@@ -89,4 +101,6 @@ func init() {
 	prometheus.MustRegister(serverReceivePointsVec)
 	prometheus.MustRegister(agentHealthCheckGaugeVec)
 	prometheus.MustRegister(httpSSLEarliestCertExpiryGaugeVec)
+	prometheus.MustRegister(proberMeshServerTaskEnabledGauge)
+	prometheus.MustRegister(proberMeshServerProbeSelfEnabledGauge)
 }
