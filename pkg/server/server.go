@@ -20,10 +20,13 @@ type ProberMeshServerOption struct {
 	ICMPDiscoveryType   string
 	HTTPListenAddr      string
 	RPCListenAddr       string
-	SeriesCacheRatio    int
 	AggregationInterval string
 	TaskMetaDir         string
-	TaskEnabled         bool
+
+	SeriesCacheRatio int
+
+	TaskEnabled bool
+	ProbeSelf   bool
 }
 
 func BuildServerMode(so *ProberMeshServerOption) {
@@ -74,6 +77,7 @@ func BuildServerMode(so *ProberMeshServerOption) {
 				config.Get(),
 				ready,
 				so.ICMPDiscoveryType,
+				so.ProbeSelf,
 			).start()
 			return nil
 		}, func(err error) {

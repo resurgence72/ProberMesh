@@ -9,9 +9,10 @@ import (
 )
 
 type targetsPool struct {
-	pool      map[string]map[string]*config.ProberConfig
-	cfg       *config.ProberMeshConfig
-	discovery discoveryType
+	pool             map[string]map[string]*config.ProberConfig
+	cfg              *config.ProberMeshConfig
+	discovery        discoveryType
+	probeSelfEnabled bool
 
 	done  context.Context
 	ready chan struct{}
@@ -31,15 +32,17 @@ func newTargetsPool(
 	cfg *config.ProberMeshConfig,
 	ready chan struct{},
 	dt string,
+	probeSelfEnabled bool,
 ) *targetsPool {
 	discovery := discoveryType(dt)
 
 	tp = &targetsPool{
-		pool:      make(map[string]map[string]*config.ProberConfig),
-		cfg:       cfg,
-		done:      ctx,
-		ready:     ready,
-		discovery: discovery,
+		pool:             make(map[string]map[string]*config.ProberConfig),
+		cfg:              cfg,
+		probeSelfEnabled: probeSelfEnabled,
+		done:             ctx,
+		ready:            ready,
+		discovery:        discovery,
 	}
 
 	switch discovery {
@@ -128,13 +131,15 @@ func (t *targetsPool) updatePool() {
 func (t *targetsPool) getPool(sourceRegion string) map[string][]*config.ProberConfig {
 	pcs := make(map[string][]*config.ProberConfig)
 	for region, pcm := range t.pool {
-		if region != sourceRegion {
-			var ps []*config.ProberConfig
-			for _, pc := range pcm {
-				ps = append(ps, pc)
-			}
-			pcs[region] = ps
+		// 不允许拨测自身 且 目的region和自身region相同时，跳过
+		if !t.probeSelfEnabled && region == sourceRegion {
+			continue
 		}
+		var ps []*config.ProberConfig
+		for _, pc := range pcm {
+			ps = append(ps, pc)
+		}
+		pcs[region] = ps
 	}
 	return pcs
 }

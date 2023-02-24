@@ -26,6 +26,8 @@ probermesh 项目的优势
 > 同 Region 下做 agg；
 >
 >Region 是此项目的核心概念，极其灵活，意义可以自定义。例如(K8s/host环境 prod/test环境 ali/gcp厂商 等)
+> 
+>ICMP 默认会拨测 非 自身region的所有region；如果需要拨测自身，需要在 server 端指定 -server.probe.self 参数
 
 - ##### 支持 ICMP/HTTP 分阶段耗时
 
@@ -125,6 +127,8 @@ Usage of ./probermesh:
         server是否开启task任务下发功能
     -server.task.meta.dir string
         server持久化task结果源目录 (default "./task_meta/")
+    -server.probe.self
+        server控制agent是否允许同region拨测
    
   
 

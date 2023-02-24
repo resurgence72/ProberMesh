@@ -133,6 +133,7 @@ dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，�
 	flag.StringVar(&serverOption.AggregationInterval, "server.aggregation.interval", "15s", "server聚合周期")
 	flag.StringVar(&serverOption.TaskMetaDir, "server.task.meta.dir", "./task_meta/", "server持久化task结果源目录")
 	flag.BoolVar(&serverOption.TaskEnabled, "server.task", false, "server是否开启task任务下发功能")
+	flag.BoolVar(&serverOption.ProbeSelf, "server.probe.self", false, "server控制agent是否允许同region拨测") // 默认为false,agent只会拿到非自身region的拨测列表
 	flag.IntVar(&serverOption.SeriesCacheRatio, "server.series.cache.ratio", 5, "server指标缓存时长重置倍率") // 缓存时长倍率，超过 cacheDurationRatio*interval 的series会被清除掉
 
 	flag.StringVar(&agentOption.ReportAddr, "agent.rpc.report.addr", "localhost:6000", "server端RPC上报地址")
