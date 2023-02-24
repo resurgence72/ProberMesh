@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
-	"probermesh/pkg/pb"
-	"probermesh/pkg/util"
 	"sync"
 	"time"
+
+	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
+
+	"github.com/sirupsen/logrus"
 )
 
 type proberJob struct {

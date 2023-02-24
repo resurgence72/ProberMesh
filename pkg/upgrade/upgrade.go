@@ -3,15 +3,17 @@ package upgrade
 import (
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"probermesh/pkg/util"
 	"strings"
 	"sync"
 	"syscall"
+
+	"probermesh/pkg/util"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (

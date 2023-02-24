@@ -3,11 +3,13 @@ package agent
 import (
 	"bufio"
 	"context"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os/exec"
-	"probermesh/pkg/pb"
 	"time"
+
+	"probermesh/pkg/pb"
+
+	"github.com/sirupsen/logrus"
 )
 
 func taskRun(cmd string, ident string, cli *rpcCli) {

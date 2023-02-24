@@ -2,11 +2,13 @@ package agent
 
 import (
 	"context"
-	"github.com/oklog/run"
-	"github.com/sirupsen/logrus"
 	"log"
+
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
+
+	"github.com/oklog/run"
+	"github.com/sirupsen/logrus"
 )
 
 type ProberMeshAgentOption struct {

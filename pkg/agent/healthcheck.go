@@ -2,10 +2,12 @@ package agent
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
+	"time"
+
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
-	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (

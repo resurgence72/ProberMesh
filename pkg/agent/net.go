@@ -3,12 +3,13 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"net"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 const (

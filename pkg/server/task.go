@@ -3,16 +3,18 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/patrickmn/go-cache"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
-	"probermesh/pkg/pb"
 	"regexp"
 	"strings"
 	"time"
+
+	"probermesh/pkg/pb"
+
+	"github.com/patrickmn/go-cache"
+	"github.com/sirupsen/logrus"
 )
 
 type expr string
@@ -141,8 +143,7 @@ func (tg *TaskGroup) flushDisk(r pb.ReportTaskResultReq) {
 		fn,
 		[]byte(content),
 		0644,
-	);
-		err != nil {
+	); err != nil {
 		logrus.Errorln("flush file failed:", err)
 	}
 }

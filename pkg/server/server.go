@@ -4,15 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/oklog/run"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
+
 	"probermesh/config"
 	"probermesh/pkg/util"
-	"syscall"
+
+	"github.com/oklog/run"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 )
 
 type ProberMeshServerOption struct {

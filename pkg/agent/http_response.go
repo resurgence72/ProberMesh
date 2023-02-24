@@ -4,11 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/alecthomas/units"
-	"github.com/prometheus/common/config"
-	pconfig "github.com/prometheus/common/config"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/net/publicsuffix"
 	"io"
 	"net"
 	"net/http"
@@ -16,12 +11,19 @@ import (
 	"net/http/httptrace"
 	"net/textproto"
 	"net/url"
-	"probermesh/pkg/pb"
-	"probermesh/pkg/util"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
+
+	"github.com/alecthomas/units"
+	"github.com/prometheus/common/config"
+	pconfig "github.com/prometheus/common/config"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/publicsuffix"
 )
 
 type Regexp struct {
@@ -266,7 +268,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 		}
 
 		if success && (len(httpConfig.FailIfHeaderMatchesRegexp) > 0 || len(httpConfig.FailIfHeaderNotMatchesRegexp) > 0) {
-			if ! matchRegularExpressionsOnHeaders(resp.Header, httpConfig) {
+			if !matchRegularExpressionsOnHeaders(resp.Header, httpConfig) {
 				defaultHTTPProberResultReq.ProberFailedReason = "resp header match reg failed"
 				return defaultHTTPProberResultReq
 			}

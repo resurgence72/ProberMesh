@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
-	"github.com/patrickmn/go-cache"
-	"probermesh/pkg/util"
 	"sync"
 	"time"
+
+	"probermesh/pkg/util"
+
+	"github.com/patrickmn/go-cache"
 )
 
 type healthDot struct {

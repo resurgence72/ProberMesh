@@ -3,14 +3,15 @@ package agent
 import (
 	"bufio"
 	"context"
-	"github.com/sirupsen/logrus"
-	"github.com/toolkits/pkg/net/gobrpc"
-	"github.com/ugorji/go/codec"
 	"io"
 	"net"
 	"net/rpc"
 	"reflect"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/toolkits/pkg/net/gobrpc"
+	"github.com/ugorji/go/codec"
 )
 
 type rpcCli struct {

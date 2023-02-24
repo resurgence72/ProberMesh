@@ -3,12 +3,14 @@ package agent
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"math"
+	"time"
+
 	"probermesh/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
-	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type targetManager struct {

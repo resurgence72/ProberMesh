@@ -2,13 +2,15 @@ package server
 
 import (
 	"context"
-	"github.com/patrickmn/go-cache"
-	"github.com/sirupsen/logrus"
-	"probermesh/pkg/pb"
-	"probermesh/pkg/util"
 	"strconv"
 	"sync"
 	"time"
+
+	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
+
+	"github.com/patrickmn/go-cache"
+	"github.com/sirupsen/logrus"
 )
 
 type Aggregator struct {
@@ -209,7 +211,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 				agg.tlsVersion,
 			}
 			httpSSLEarliestCertExpiryGaugeVec.WithLabelValues(ks...).Set(float64(agg.tlsExpiry))
-			a.setCache(a.httpMetricsHold,ks...)
+			a.setCache(a.httpMetricsHold, ks...)
 		}
 
 		ks := []string{
@@ -222,7 +224,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 		// reset http httpProberFailedGaugeVec指标的缓存
 		// 为什么要使用cache缓存，因为reason指标有状态，当reason过期是，需要删除old series；否则当前key的记录会一直被暴露
-		a.setCache(a.httpMetricsHold,ks...)
+		a.setCache(a.httpMetricsHold, ks...)
 
 		for stage, total := range agg.phase {
 			ks := []string{
@@ -235,7 +237,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			// 每个 sR->tR 的每个stage的平均
 			httpProberDurationGaugeVec.WithLabelValues(ks...).Set(total / float64(agg.batchCnt))
 			// key不同(stage),需要另存一个key
-			a.setCache(a.httpMetricsHold,ks...)
+			a.setCache(a.httpMetricsHold, ks...)
 		}
 	}
 }
@@ -252,7 +254,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 		icmpProberFailedGaugeVec.WithLabelValues(ks...).Set(float64(agg.failedCnt))
 
 		// cache icmp的key
-		a.setCache(a.icmpMetricsHold,ks...)
+		a.setCache(a.icmpMetricsHold, ks...)
 
 		var icmpDurationsTotal float64
 		for stage, total := range agg.phase {
@@ -275,7 +277,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 				icmpProberDurationGaugeVec.WithLabelValues(ks...).Set(stageAgg)
 
 				// 由于label不同(stage),所以要另存一个key
-				a.setCache(a.icmpMetricsHold,ks...)
+				a.setCache(a.icmpMetricsHold, ks...)
 
 				icmpDurationsTotal += total
 			}

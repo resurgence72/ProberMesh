@@ -1,10 +1,11 @@
 package agent
 
 import (
-	"github.com/sirupsen/logrus"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/upgrade"
 	"probermesh/pkg/util"
+
+	"github.com/sirupsen/logrus"
 )
 
 type upgradeChecker struct {

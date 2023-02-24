@@ -1,8 +1,9 @@
 package pb
 
 import (
-	"probermesh/config"
 	"regexp"
+
+	"probermesh/config"
 )
 
 type ReportReq struct {

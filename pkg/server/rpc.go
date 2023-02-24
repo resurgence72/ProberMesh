@@ -2,15 +2,17 @@ package server
 
 import (
 	"bufio"
-	"github.com/sirupsen/logrus"
-	"github.com/ugorji/go/codec"
 	"io"
 	"net"
 	"net/rpc"
-	"probermesh/pkg/pb"
-	"probermesh/pkg/upgrade"
 	"reflect"
 	"time"
+
+	"probermesh/pkg/pb"
+	"probermesh/pkg/upgrade"
+
+	"github.com/sirupsen/logrus"
+	"github.com/ugorji/go/codec"
 )
 
 type Server struct{}

@@ -1,12 +1,13 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
+
+	"gopkg.in/yaml.v3"
 )
 
 type ProberMeshConfig struct {
-	ProberConfigs       []*ProberConfig `yaml:"prober_configs"`
+	ProberConfigs []*ProberConfig `yaml:"prober_configs"`
 }
 
 type ProberConfig struct {
@@ -29,7 +30,7 @@ func InitConfig(path string) error {
 func Get() *ProberMeshConfig {
 	if cfg == nil {
 		// 防止不指定配置参数时遍历pcs报错
-		return &ProberMeshConfig{ProberConfigs:nil}
+		return &ProberMeshConfig{ProberConfigs: nil}
 	}
 	return cfg
 }

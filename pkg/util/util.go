@@ -6,9 +6,10 @@ import (
 	"encoding/hex"
 	"math/rand"
 	"net/http"
-	"probermesh/pkg/version"
 	"strings"
 	"time"
+
+	"probermesh/pkg/version"
 )
 
 const (

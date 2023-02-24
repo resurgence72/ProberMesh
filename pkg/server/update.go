@@ -2,10 +2,12 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
+
 	"probermesh/pkg/upgrade"
+
+	"github.com/sirupsen/logrus"
 )
 
 type resp struct {

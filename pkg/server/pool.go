@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
+	"time"
+
 	"probermesh/config"
 	"probermesh/pkg/util"
-	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type targetsPool struct {

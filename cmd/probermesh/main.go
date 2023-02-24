@@ -3,16 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path"
+	"time"
+
 	"probermesh/pkg/agent"
 	"probermesh/pkg/server"
 	"probermesh/pkg/util"
-	"time"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 )
 
 type config struct {

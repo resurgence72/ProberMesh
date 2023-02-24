@@ -7,8 +7,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/andybalholm/brotli"
-	"github.com/sirupsen/logrus"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +15,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/andybalholm/brotli"
+	"github.com/sirupsen/logrus"
 )
 
 func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol bool, target string) (ip *net.IPAddr, lookupTime float64, err error) {
@@ -88,7 +89,7 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 	return fallback, lookupTime, nil
 }
 
-func newTransport(rt, noServerName http.RoundTripper, ) *transport {
+func newTransport(rt, noServerName http.RoundTripper) *transport {
 	return &transport{
 		Transport:             rt,
 		NoServerNameTransport: noServerName,

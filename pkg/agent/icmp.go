@@ -2,14 +2,16 @@ package agent
 
 import (
 	"context"
-	"github.com/go-ping/ping"
-	"github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
-	"probermesh/pkg/pb"
-	"probermesh/pkg/util"
 	"sync"
 	"time"
+
+	"probermesh/pkg/pb"
+	"probermesh/pkg/util"
+
+	"github.com/go-ping/ping"
+	"github.com/sirupsen/logrus"
 )
 
 type ICMPProbe struct {
