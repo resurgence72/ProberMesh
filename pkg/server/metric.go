@@ -79,13 +79,13 @@ var (
 
 	proberMeshServerTaskEnabledGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: namespace,
-		Name:      "prober_mesh_server_task_enabled",
+		Name:      "server_task_enabled",
 		Help:      "proberMesh server whether allow task module",
 	})
 
 	proberMeshServerProbeSelfEnabledGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: namespace,
-		Name:      "prober_mesh_server_probe_self_enabled",
+		Name:      "server_probe_self_enabled",
 		Help:      "proberMesh server whether allow probe.self module",
 	})
 )
