@@ -1,7 +1,7 @@
 #bin/bash
 
 BINARY_NAME="probermesh"
-DOWNLOAD_URL="https://github.com/resurgence72/ProberMesh/releases/download/v0.0.5/probermesh" # 推荐使用最新版本
+DOWNLOAD_URL="https://github.com/resurgence72/ProberMesh/releases/download/v0.0.6/probermesh" # 推荐使用最新版本
 SERVER_RPC_ADDR="1.1.1.1:6000"
 LOCAL_REGION=$1
 
