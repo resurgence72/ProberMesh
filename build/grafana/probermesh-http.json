@@ -25,7 +25,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": 25,
-  "iteration": 1673241722960,
+  "iteration": 1680490457799,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -45,7 +45,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fieldConfig": {
         "defaults": {
@@ -95,7 +95,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -111,7 +111,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fieldConfig": {
         "defaults": {
@@ -165,7 +165,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "count by (region)(prober_agent_is_alive==1)",
@@ -178,104 +178,106 @@
       "type": "piechart"
     },
     {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "decimals": 0,
-          "mappings": [],
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
           "unit": "short"
         },
         "overrides": []
       },
+      "fill": 0,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 10,
         "y": 1
       },
+      "hiddenSeries": false,
       "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "hidden",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "none"
-        }
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
       },
+      "lines": false,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": false
+      },
+      "percentage": false,
       "pluginVersion": "8.5.11",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "count by (source_region) (prober_http_failed{target_region=~\"$project\",failed_reason!=\"success\"})",
+          "expr": "topk(10,count by (source_region,target_region) (prober_http_failed{failed_reason!=\"success\"}))",
           "hide": false,
           "interval": "30",
-          "legendFormat": "{{source_region}}",
+          "legendFormat": "{{source_region}}->{{target_region}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "${project}各region拨测失败数",
-      "type": "timeseries"
+      "thresholds": [],
+      "timeRegions": [],
+      "title": "各region拨测失败数",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:53",
+          "decimals": 0,
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        },
+        {
+          "$$hashKey": "object:54",
+          "format": "short",
+          "logBase": 1,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fieldConfig": {
         "defaults": {
@@ -330,25 +332,25 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "topk(5,sum by (source_region) (prober_http_failed{target_region=~\"$project\",failed_reason!=\"success\"}))",
+          "expr": "topk(10,sum by (source_region,target_region) (prober_http_failed{failed_reason!=\"success\"}))",
           "instant": true,
           "interval": "30",
-          "legendFormat": "{{source_region}}",
+          "legendFormat": "{{source_region}}->{{target_region}}",
           "range": false,
           "refId": "A"
         }
       ],
-      "title": "${project}失败数分布top5",
+      "title": "失败数分布top5",
       "type": "piechart"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "description": "",
       "fieldConfig": {
@@ -651,7 +653,7 @@
         "sortBy": [
           {
             "desc": false,
-            "displayName": "tls过期"
+            "displayName": "失败原因"
           }
         ]
       },
@@ -660,7 +662,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -675,7 +677,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -690,7 +692,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -705,7 +707,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -720,7 +722,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -735,7 +737,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -750,7 +752,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -765,7 +767,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -842,7 +844,7 @@
       "type": "table"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -850,111 +852,110 @@
         "y": 25
       },
       "id": 10,
-      "panels": [
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "fill": 0,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 11,
-            "w": 24,
-            "x": 0,
-            "y": 2
-          },
-          "hiddenSeries": false,
-          "id": 12,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": false,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 2,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "8.5.11",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "s7PBkOc4k"
-              },
-              "editorMode": "code",
-              "expr": "sum by (source_region,target_addr) (prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",target_region=~\"$project\"})",
-              "hide": false,
-              "interval": "15",
-              "legendFormat": "{{source_region}} -> {{target_addr}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "thresholds": [
-            {
-              "$$hashKey": "object:254",
-              "colorMode": "critical",
-              "fill": true,
-              "line": true,
-              "op": "gt",
-              "value": 3,
-              "yaxis": "left"
-            }
-          ],
-          "timeRegions": [],
-          "title": "HTTP 总耗时",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:226",
-              "format": "s",
-              "logBase": 1,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:227",
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        }
-      ],
+      "panels": [],
       "title": "HTTP 总耗时",
       "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus}"
+      },
+      "fill": 0,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 11,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.5.11",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (source_region,target_addr) (prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",target_region=~\"$project\"})",
+          "hide": false,
+          "interval": "30",
+          "legendFormat": "{{source_region}} -> {{target_addr}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "thresholds": [
+        {
+          "$$hashKey": "object:254",
+          "colorMode": "critical",
+          "fill": true,
+          "line": true,
+          "op": "gt",
+          "value": 3,
+          "yaxis": "left"
+        }
+      ],
+      "timeRegions": [],
+      "title": "HTTP 总耗时",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "mode": "time",
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:226",
+          "format": "s",
+          "logBase": 1,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:227",
+          "format": "short",
+          "logBase": 1,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false
+      }
     },
     {
       "collapsed": false,
@@ -962,7 +963,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 37
       },
       "id": 14,
       "panels": [],
@@ -976,7 +977,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -984,7 +985,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 27
+        "y": 38
       },
       "hiddenSeries": false,
       "id": 15,
@@ -1016,12 +1017,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",phase=\"resolve\",target_region=~\"$project\"}",
           "hide": false,
-          "interval": "15",
+          "interval": "30",
           "legendFormat": "{{source_region}} -> {{target_addr}}",
           "range": true,
           "refId": "A"
@@ -1077,7 +1078,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1085,7 +1086,7 @@
         "h": 9,
         "w": 8,
         "x": 8,
-        "y": 27
+        "y": 38
       },
       "hiddenSeries": false,
       "id": 16,
@@ -1117,12 +1118,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",phase=\"connect\",target_region=~\"$project\"}",
           "hide": false,
-          "interval": "15",
+          "interval": "30",
           "legendFormat": "{{source_region}} -> {{target_addr}}",
           "range": true,
           "refId": "A"
@@ -1178,7 +1179,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1186,7 +1187,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 27
+        "y": 38
       },
       "hiddenSeries": false,
       "id": 17,
@@ -1218,12 +1219,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",phase=\"tls\",target_region=~\"$project\"}",
           "hide": false,
-          "interval": "15",
+          "interval": "30",
           "legendFormat": "{{source_region}} -> {{target_addr}}",
           "range": true,
           "refId": "A"
@@ -1279,7 +1280,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1287,7 +1288,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 18,
@@ -1319,12 +1320,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",phase=\"processing\",target_region=~\"$project\"}",
           "hide": false,
-          "interval": "15",
+          "interval": "30",
           "legendFormat": "{{source_region}} -> {{target_addr}}",
           "range": true,
           "refId": "A"
@@ -1380,7 +1381,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1388,7 +1389,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 19,
@@ -1420,12 +1421,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "prober_http_duration_seconds{source_region=~\"$source_region\",target_addr=~\"$target_addr\",phase=\"transfer\",target_region=~\"$project\"}",
           "hide": false,
-          "interval": "15",
+          "interval": "30",
           "legendFormat": "{{source_region}} -> {{target_addr}}",
           "range": true,
           "refId": "A"
@@ -1475,7 +1476,7 @@
       }
     }
   ],
-  "refresh": "15s",
+  "refresh": "30s",
   "schemaVersion": 36,
   "style": "dark",
   "tags": [
@@ -1485,9 +1486,28 @@
   "templating": {
     "list": [
       {
-        "allValue": ".+",
         "current": {
           "selected": false,
+          "text": "network_group",
+          "value": "network_group"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "数据源",
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allValue": ".+",
+        "current": {
+          "selected": true,
           "text": [
             "印尼-雅加达"
           ],
@@ -1522,10 +1542,10 @@
         "current": {
           "selected": true,
           "text": [
-            "波克捕鱼"
+            "domino"
           ],
           "value": [
-            "波克捕鱼"
+            "domino"
           ]
         },
         "datasource": {
@@ -1586,7 +1606,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-1h",
     "to": "now"
   },
   "timepicker": {
@@ -1599,6 +1619,6 @@
   "timezone": "",
   "title": "HTTP拨测",
   "uid": "JXzlLy5Vz",
-  "version": 74,
+  "version": 85,
   "weekStart": ""
 }
