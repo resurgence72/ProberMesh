@@ -16,6 +16,8 @@ import (
 	"sync"
 	"time"
 
+	"probermesh/config"
+
 	"github.com/andybalholm/brotli"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +28,7 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 
 	defer func() {
 		lookupTime = time.Since(resolveStart).Seconds()
-		//probeDNSLookupTimeSeconds.Add(lookupTime)
+		// probeDNSLookupTimeSeconds.Add(lookupTime)
 	}()
 
 	resolver := &net.Resolver{}
@@ -34,20 +36,20 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 		ips, err := resolver.LookupIP(ctx, IPProtocol, target)
 		if err == nil {
 			for _, ip := range ips {
-				//level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
-				//probeIPProtocolGauge.Set(protocolToGauge[IPProtocol])
-				//probeIPAddrHash.Set(ipHash(ip))
+				// level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				// probeIPProtocolGauge.Set(protocolToGauge[IPProtocol])
+				// probeIPAddrHash.Set(ipHash(ip))
 				return &net.IPAddr{IP: ip}, lookupTime, nil
 			}
 		}
-		//level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "ip_protocol", IPProtocol, "err", err)
+		// level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "ip_protocol", IPProtocol, "err", err)
 		fmt.Println("Resolution with IP protocol failed", "target", target, "ip_protocol", IPProtocol, "err", err)
 		return nil, 0.0, err
 	}
 
 	ips, err := resolver.LookupIPAddr(ctx, target)
 	if err != nil {
-		//level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "err", err)
+		// level.Error(logger).Log("msg", "Resolution with IP protocol failed", "target", target, "err", err)
 		fmt.Println("Resolution with IP protocol failed", "target", target, "err", err)
 		return nil, 0.0, err
 	}
@@ -58,9 +60,9 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 		switch IPProtocol {
 		case "ip4":
 			if ip.IP.To4() != nil {
-				//level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
-				//probeIPProtocolGauge.Set(4)
-				//probeIPAddrHash.Set(ipHash(ip.IP))
+				// level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				// probeIPProtocolGauge.Set(4)
+				// probeIPAddrHash.Set(ipHash(ip.IP))
 				return &ip, lookupTime, nil
 			}
 
@@ -69,9 +71,9 @@ func chooseProtocol(ctx context.Context, IPProtocol string, fallbackIPProtocol b
 
 		case "ip6":
 			if ip.IP.To4() == nil {
-				//level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
-				//probeIPProtocolGauge.Set(6)
-				//probeIPAddrHash.Set(ipHash(ip.IP))
+				// level.Info(logger).Log("msg", "Resolved target address", "target", target, "ip", ip.String())
+				// probeIPProtocolGauge.Set(6)
+				// probeIPAddrHash.Set(ipHash(ip.IP))
 				return &ip, lookupTime, nil
 			}
 
@@ -164,7 +166,7 @@ func (t *transport) TLSHandshakeDone(_ tls.ConnectionState, _ error) {
 	t.current.tlsDone = time.Now()
 }
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	//level.Info(t.logger).Log("msg", "Making HTTP request", "url", req.URL.String(), "host", req.Host)
+	// level.Info(t.logger).Log("msg", "Making HTTP request", "url", req.URL.String(), "host", req.Host)
 
 	trace := &roundTripTrace{}
 	if req.URL.Scheme == "https" {
@@ -180,19 +182,19 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.firstHost != req.URL.Host {
 		// This is a redirect to something other than the initial host,
 		// so TLS ServerName should not be set.
-		//level.Info(t.logger).Log("msg", "Address does not match first address, not sending TLS ServerName", "first", t.firstHost, "address", req.URL.Host)
+		// level.Info(t.logger).Log("msg", "Address does not match first address, not sending TLS ServerName", "first", t.firstHost, "address", req.URL.Host)
 		return t.NoServerNameTransport.RoundTrip(req)
 	}
 
 	return t.Transport.RoundTrip(req)
 }
 
-func matchRegularExpressionsOnHeaders(header http.Header, httpConfig HTTPProbe) bool {
+func matchRegularExpressionsOnHeaders(header http.Header, httpConfig config.HTTPProbe) bool {
 	for _, headerMatchSpec := range httpConfig.FailIfHeaderMatchesRegexp {
 		values := header[textproto.CanonicalMIMEHeaderKey(headerMatchSpec.Header)]
 		if len(values) == 0 {
 			if !headerMatchSpec.AllowMissing {
-				//level.Error(logger).Log("msg", "Missing required header", "header", headerMatchSpec.Header)
+				// level.Error(logger).Log("msg", "Missing required header", "header", headerMatchSpec.Header)
 				return false
 			} else {
 				continue // No need to match any regex on missing headers.
@@ -201,7 +203,7 @@ func matchRegularExpressionsOnHeaders(header http.Header, httpConfig HTTPProbe) 
 
 		for _, val := range values {
 			if headerMatchSpec.Regexp.MatchString(val) {
-				//level.Error(logger).Log("msg", "Header matched regular expression", "header", headerMatchSpec.Header,
+				// level.Error(logger).Log("msg", "Header matched regular expression", "header", headerMatchSpec.Header,
 				//	"regexp", headerMatchSpec.Regexp, "value_count", len(values))
 				return false
 			}
@@ -211,7 +213,7 @@ func matchRegularExpressionsOnHeaders(header http.Header, httpConfig HTTPProbe) 
 		values := header[textproto.CanonicalMIMEHeaderKey(headerMatchSpec.Header)]
 		if len(values) == 0 {
 			if !headerMatchSpec.AllowMissing {
-				//level.Error(logger).Log("msg", "Missing required header", "header", headerMatchSpec.Header)
+				// level.Error(logger).Log("msg", "Missing required header", "header", headerMatchSpec.Header)
 				return false
 			} else {
 				continue // No need to match any regex on missing headers.
@@ -228,7 +230,7 @@ func matchRegularExpressionsOnHeaders(header http.Header, httpConfig HTTPProbe) 
 		}
 
 		if !anyHeaderValueMatched {
-			//level.Error(logger).Log("msg", "Header did not match regular expression", "header", headerMatchSpec.Header,
+			// level.Error(logger).Log("msg", "Header did not match regular expression", "header", headerMatchSpec.Header,
 			//	"regexp", headerMatchSpec.Regexp, "value_count", len(values))
 			return false
 		}
@@ -256,21 +258,21 @@ func getDecompressionReader(algorithm string, origBody io.ReadCloser) (io.ReadCl
 	}
 }
 
-func matchRegularExpressions(reader io.Reader, httpConfig HTTPProbe) bool {
+func matchRegularExpressions(reader io.Reader, httpConfig config.HTTPProbe) bool {
 	body, err := io.ReadAll(reader)
 	if err != nil {
-		//level.Error(logger).Log("msg", "Error reading HTTP body", "err", err)
+		// level.Error(logger).Log("msg", "Error reading HTTP body", "err", err)
 		return false
 	}
 	for _, expression := range httpConfig.FailIfBodyMatchesRegexp {
 		if expression.Regexp.Match(body) {
-			//level.Error(logger).Log("msg", "Body matched regular expression", "regexp", expression)
+			// level.Error(logger).Log("msg", "Body matched regular expression", "regexp", expression)
 			return false
 		}
 	}
 	for _, expression := range httpConfig.FailIfBodyNotMatchesRegexp {
 		if !expression.Regexp.Match(body) {
-			//level.Error(logger).Log("msg", "Body did not match regular expression", "regexp", expression)
+			// level.Error(logger).Log("msg", "Body did not match regular expression", "regexp", expression)
 			return false
 		}
 	}
