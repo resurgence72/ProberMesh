@@ -25,7 +25,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": 25,
-  "iteration": 1680490457799,
+  "iteration": 1680491352978,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -1517,9 +1517,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "s7PBkOc4k"
+          "uid": "${prometheus}"
         },
-        "definition": "label_values(prober_http_duration_seconds{source_region!~\"^icmp|^ICMP|^http|^HTTP\"},source_region)",
+        "definition": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region!~\"^icmp|^ICMP|^http|^HTTP\"},source_region)",
         "description": "源区域",
         "hide": 0,
         "includeAll": true,
@@ -1528,7 +1528,7 @@
         "name": "source_region",
         "options": [],
         "query": {
-          "query": "label_values(prober_http_duration_seconds{source_region!~\"^icmp|^ICMP|^http|^HTTP\"},source_region)",
+          "query": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region!~\"^icmp|^ICMP|^http|^HTTP\"},source_region)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1550,9 +1550,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "s7PBkOc4k"
+          "uid": "${prometheus}"
         },
-        "definition": "label_values(prober_http_duration_seconds{source_region=~\"$source_region\"},target_region)",
+        "definition": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region=~\"$source_region\"},target_region)",
         "description": "项目标识",
         "hide": 0,
         "includeAll": true,
@@ -1561,7 +1561,7 @@
         "name": "project",
         "options": [],
         "query": {
-          "query": "label_values(prober_http_duration_seconds{source_region=~\"$source_region\"},target_region)",
+          "query": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region=~\"$source_region\"},target_region)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1583,9 +1583,9 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "s7PBkOc4k"
+          "uid": "${prometheus}"
         },
-        "definition": "label_values(prober_http_duration_seconds{source_region=~\"$source_region\",target_region=~\"$project\"},target_addr)",
+        "definition": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region=~\"$source_region\",target_region=~\"$project\"},target_addr)",
         "description": "目标域名",
         "hide": 0,
         "includeAll": true,
@@ -1594,7 +1594,7 @@
         "name": "target_addr",
         "options": [],
         "query": {
-          "query": "label_values(prober_http_duration_seconds{source_region=~\"$source_region\",target_region=~\"$project\"},target_addr)",
+          "query": "label_values({__name__=~\"prober_http_duration_seconds|prober_http_failed\",source_region=~\"$source_region\",target_region=~\"$project\"},target_addr)",
           "refId": "StandardVariableQuery"
         },
         "refresh": 1,
@@ -1619,6 +1619,6 @@
   "timezone": "",
   "title": "HTTP拨测",
   "uid": "JXzlLy5Vz",
-  "version": 85,
+  "version": 87,
   "weekStart": ""
 }
