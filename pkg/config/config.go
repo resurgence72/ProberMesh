@@ -27,6 +27,22 @@ type ProberConfig struct {
 	Targets    []string  `yaml:"targets"`
 }
 
+func (p *ProberConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	pc := &ProberConfig{}
+	type plain ProberConfig
+
+	if err := unmarshal((*plain)(pc)); err != nil {
+		return err
+	}
+
+	if len(pc.HttpProbe.IPProtocol) == 0 {
+		pc.HttpProbe.IPProtocol = DefaultHttpProbe.IPProtocol
+	}
+
+	*p = *pc
+	return nil
+}
+
 type HTTPProbe struct {
 	// Defaults to 2xx.
 	ValidStatusCodes             []int                   `yaml:"valid_status_codes,omitempty"`
@@ -49,13 +65,15 @@ type HTTPProbe struct {
 	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
 
+var DefaultHttpProbe = HTTPProbe{
+	IPProtocolFallback: true,
+	HTTPClientConfig:   config.DefaultHTTPClientConfig,
+	IPProtocol:         "ip4",
+	ValidStatusCodes:   []int{200},
+}
+
 func (s *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	*s = HTTPProbe{
-		IPProtocolFallback: true,
-		HTTPClientConfig:   config.DefaultHTTPClientConfig,
-		IPProtocol:         "ip4",
-		ValidStatusCodes:   []int{200},
-	}
+	*s = DefaultHttpProbe
 	type plain HTTPProbe
 	if err := unmarshal((*plain)(s)); err != nil {
 		return err
@@ -86,6 +104,10 @@ func (s *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 				return fmt.Errorf(`invalid configuration "%s: %s", "compression: %s"`, key, value, s.Compression)
 			}
 		}
+	}
+
+	if len(s.IPProtocol) == 0 {
+		s.IPProtocol = DefaultHttpProbe.IPProtocol
 	}
 
 	return nil
@@ -209,7 +231,6 @@ func InitConfig(path string) error {
 		return err
 	}
 	cfg = config
-	fmt.Printf("aaa %#v\n\n", cfg.ProberConfigs[0].HttpProbe)
 	return nil
 }
 

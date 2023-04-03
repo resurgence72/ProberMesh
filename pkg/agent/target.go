@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
-	"probermesh/config"
+	"probermesh/pkg/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -24,6 +25,8 @@ type targetManager struct {
 	ctx             context.Context
 
 	ready, beforeReady chan struct{}
+
+	m sync.Mutex
 }
 
 var (

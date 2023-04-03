@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"probermesh/config"
+	"probermesh/pkg/config"
 
 	"github.com/andybalholm/brotli"
 	"github.com/sirupsen/logrus"

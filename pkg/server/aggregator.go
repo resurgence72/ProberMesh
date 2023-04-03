@@ -28,9 +28,10 @@ type aggProberResult struct {
 	targetRegion string
 
 	targetAddr   string // http 使用
-	failedReason string //http 使用
-	tlsVersion   string //http 使用
-	tlsExpiry    int64  //http 使用
+	failedReason string // http 使用
+	tlsVersion   string // http 使用
+	tlsExpiry    int64  // http 使用
+	statusCodes  []int  // http 使用
 
 	batchCnt int64 // cnt算avg
 
@@ -156,6 +157,7 @@ func (a *Aggregator) agg() {
 					sourceRegion: pr.SourceRegion,
 					targetRegion: pr.TargetRegion,
 					targetAddr:   pr.ProberTarget,
+					statusCodes:  make([]int, 0),
 					phase:        make(map[string]float64),
 					failedReason: httpDefaultFailedReason,
 				}
@@ -165,6 +167,10 @@ func (a *Aggregator) agg() {
 			// 保证算agg时，分母一定为成功的job数
 			// 防止: 成功4台,失败1台；算agg: 理想 total/4, 结果 total/5, 反而会拉低实际值
 			container := containers[key]
+			
+			// append code
+			container.statusCodes = append(container.statusCodes, pr.ProberStatusCode)
+
 			if pr.ProberSuccess {
 				container.batchCnt++
 
@@ -214,7 +220,26 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			a.setCache(a.httpMetricsHold, ks...)
 		}
 
+		// 打点 httpProberStatusCodeGaugeVec
+		var sumCode, code int
+		if len(agg.statusCodes) > 0 {
+			for _, c := range agg.statusCodes {
+				sumCode += c
+			}
+			code = sumCode / len(agg.statusCodes)
+		} else {
+			code = 0
+		}
 		ks := []string{
+			agg.sourceRegion,
+			agg.targetRegion,
+			agg.targetAddr,
+		}
+		httpProberStatusCodeGaugeVec.WithLabelValues(ks...).Set(float64(code))
+		a.setCache(a.httpMetricsHold, ks...)
+
+		// 打点 httpProberFailedGaugeVec
+		ks = []string{
 			agg.sourceRegion,
 			agg.targetRegion,
 			agg.targetAddr,
@@ -226,6 +251,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 		// 为什么要使用cache缓存，因为reason指标有状态，当reason过期是，需要删除old series；否则当前key的记录会一直被暴露
 		a.setCache(a.httpMetricsHold, ks...)
 
+		// 打点 httpProberDurationGaugeVec
 		for stage, total := range agg.phase {
 			ks := []string{
 				stage,

@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"probermesh/config"
+	"probermesh/pkg/config"
 	"probermesh/pkg/util"
 
 	"github.com/oklog/run"

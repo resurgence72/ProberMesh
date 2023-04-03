@@ -3,6 +3,9 @@ package agent
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
@@ -52,6 +55,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	}
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
+	defer cancelAll()
 
 	cli := initRpcCli(ctxAll, ao.ReportAddr)
 	var g run.Group
@@ -126,6 +130,27 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 			return nil
 		}, func(e error) {
 			cancelAll()
+		})
+	}
+
+	{
+		// 信号管理
+		term := make(chan os.Signal, 1)
+		signal.Notify(term, os.Interrupt, syscall.SIGTERM)
+		cancel := make(chan struct{})
+
+		g.Add(func() error {
+			select {
+			case <-term:
+				logrus.Warnln("agent shutdown")
+				cancelAll()
+				return nil
+			case <-cancel:
+				return nil
+			}
+		}, func(err error) {
+			close(cancel)
+			logrus.Warnln("signal controller over")
 		})
 	}
 

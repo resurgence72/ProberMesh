@@ -3,7 +3,7 @@ package pb
 import (
 	"regexp"
 
-	"probermesh/config"
+	"probermesh/pkg/config"
 )
 
 type ReportReq struct {
@@ -39,17 +39,17 @@ type PorberResultReq struct {
 	// 探测是否成功
 	ProberSuccess bool
 
-	// 探测失败原因(http)
+	// http探测失败原因
 	ProberFailedReason string
+	// http响应码
+	ProberStatusCode int
+	// http字段
+	HTTPFields map[string]float64
+	// tls字段
+	TLSFields map[string]string
 
 	// icmp的字段 resolve setup rtt
 	ICMPFields map[string]float64
-
-	// http字段
-	HTTPFields map[string]float64
-
-	// tls字段
-	TLSFields map[string]string
 }
 
 type UpgradeCheckReq struct {

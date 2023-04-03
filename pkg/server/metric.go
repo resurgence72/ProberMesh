@@ -70,6 +70,13 @@ var (
 		Help:      "https last SSL chain expiry in unixtime",
 	}, []string{"source_region", "target_region", "target_addr", "version"})
 
+	// http 状态码
+	httpProberStatusCodeGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "http_status_code",
+		Help:      "http response status code",
+	}, []string{"source_region", "target_region", "target_addr"})
+
 	// agent 节点健康检查   # 考虑恢复，agent下线后历史series需要重置为0
 	agentHealthCheckGaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
@@ -103,4 +110,5 @@ func init() {
 	prometheus.MustRegister(httpSSLEarliestCertExpiryGaugeVec)
 	prometheus.MustRegister(proberMeshServerTaskEnabledGauge)
 	prometheus.MustRegister(proberMeshServerProbeSelfEnabledGauge)
+	prometheus.MustRegister(httpProberStatusCodeGaugeVec)
 }

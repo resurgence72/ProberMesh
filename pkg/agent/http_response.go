@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	cfg "probermesh/config"
+	cfg "probermesh/pkg/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -201,6 +201,7 @@ func probeHTTP(ctx context.Context, target string, httpProbe cfg.HTTPProbe, sour
 		requestErrored := (err != nil)
 
 		logrus.Debugln("msg", "Received HTTP response", "status_code", resp.StatusCode)
+		defaultHTTPProberResultReq.ProberStatusCode = resp.StatusCode
 		if len(httpConfig.ValidStatusCodes) != 0 {
 			for _, code := range httpConfig.ValidStatusCodes {
 				if resp.StatusCode == code {

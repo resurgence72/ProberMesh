@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"probermesh/config"
+	"probermesh/pkg/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -21,8 +21,6 @@ type proberJob struct {
 	http config.HTTPProbe
 	r    *rpcCli
 	ch   chan *pb.PorberResultReq
-
-	m sync.Mutex
 }
 
 func (p *proberJob) run() {
@@ -48,8 +46,8 @@ func (p *proberJob) jobExist(
 		proberTarget,
 	)
 
-	p.m.Lock()
-	defer p.m.Unlock()
+	tm.m.Lock()
+	defer tm.m.Unlock()
 	if tm.currents == nil {
 		tm.currents = make(map[string]struct{})
 	}
