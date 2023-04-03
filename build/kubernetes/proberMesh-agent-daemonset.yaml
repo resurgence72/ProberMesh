@@ -12,10 +12,7 @@ spec:
       labels:
         name: probermesh-agent-deploy
     spec:
-      nodeSelector:
-        project: "jczc"
       imagePullSecrets:
-        # secret 需要创建
         - name: alicloud-hub
       containers:
         - name: probermesh
@@ -26,13 +23,13 @@ spec:
             - -mode=agent
             - -agent.probe.interval=15s
             - -agent.sync.interval=1m
-            - -server.rpc.addr=probermesh-svc-rpc.ops-sre:6000
-          image: boker-hub-registry.cn-shanghai.cr.aliyuncs.com/ops/probermesh:v0.0.1
+            - -server.rpc.report.addr=probermesh-svc-rpc.ops-sre:6000
+          image: boker-hub-registry.cn-shanghai.cr.aliyuncs.com/ops/probermesh:v0.0.6
           imagePullPolicy: Always
           resources:
             limits:
               cpu: "300m"
               memory: "200Mi"
             requests:
-              cpu: "300m"
-              memory: "200Mi"
+              cpu: "100m"
+              memory: "50Mi"
