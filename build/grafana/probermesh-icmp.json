@@ -25,12 +25,12 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": 22,
-  "iteration": 1677231719592,
+  "iteration": 1680490645607,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "collapsed": false,
+      "collapsed": true,
       "datasource": {
         "type": "prometheus",
         "uid": "AaZ9naG4z"
@@ -42,976 +42,977 @@
         "y": 0
       },
       "id": 26,
-      "panels": [],
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 3,
+            "x": 0,
+            "y": 1
+          },
+          "id": 28,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "8.5.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "count(prober_agent_is_alive==1)",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "探针存活个数",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 3,
+            "y": 1
+          },
+          "id": 29,
+          "options": {
+            "displayLabels": [
+              "name",
+              "value"
+            ],
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "sortBy": "Value",
+              "sortDesc": true,
+              "values": [
+                "value"
+              ]
+            },
+            "pieType": "donut",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "7.5.16",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "count by (region)(prober_agent_is_alive==1)",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{region}}",
+              "refId": "A"
+            }
+          ],
+          "title": "探针分布",
+          "type": "piechart"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 5,
+            "x": 9,
+            "y": 1
+          },
+          "hiddenSeries": false,
+          "id": 36,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": true,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": false,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.5.11",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (source_region,target_region) (prober_icmp_failed) > 0",
+              "hide": false,
+              "legendFormat": "{{source_region}} -> {{target_region}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "当前批次拨测失败数",
+          "tooltip": {
+            "shared": true,
+            "sort": 2,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:749",
+              "decimals": 0,
+              "format": "short",
+              "label": "count",
+              "logBase": 1,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:750",
+              "format": "short",
+              "label": "count",
+              "logBase": 1,
+              "show": false
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 5,
+            "x": 14,
+            "y": 1
+          },
+          "hiddenSeries": false,
+          "id": 34,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "8.5.11",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(prober_server_receive_points{}[10m]))",
+              "interval": "",
+              "legendFormat": "report-tps",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "数据上报tps",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:615",
+              "decimals": 0,
+              "format": "reqps",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:616",
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "dark-red",
+                      "index": 1,
+                      "text": "NO"
+                    },
+                    "1": {
+                      "color": "dark-green",
+                      "index": 0,
+                      "text": "YES"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 5,
+            "x": 19,
+            "y": 1
+          },
+          "id": 37,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "8.5.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "prober_server_task_enabled",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "report-tps",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "任务 模块是否启用",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "dark-red",
+                      "index": 1,
+                      "text": "NO"
+                    },
+                    "1": {
+                      "color": "dark-green",
+                      "index": 0,
+                      "text": "YES"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 5,
+            "x": 19,
+            "y": 5
+          },
+          "id": 38,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "8.5.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "prober_server_probe_self_enabled",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "report-tps",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "自拨测 模块是否启用",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "displayMode": "auto",
+                "filterable": false,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "丢包率"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "gradient-gauge"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "yellow",
+                          "value": 1
+                        },
+                        {
+                          "color": "dark-red",
+                          "value": 5
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.minWidth",
+                    "value": 300
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "解析耗时(resolve)"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "往返耗时(rtt)"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "总耗时"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "continuous-BlYlRd"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "stddev"
+                },
+                "properties": [
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "源区域"
+                },
+                "properties": [
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-text"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "目的区域"
+                },
+                "properties": [
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-text"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "50分位耗时"
+                },
+                "properties": [
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "90分位耗时"
+                },
+                "properties": [
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "s"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 2
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "失败次数"
+                },
+                "properties": [
+                  {
+                    "id": "decimals",
+                    "value": 0
+                  },
+                  {
+                    "id": "custom.displayMode",
+                    "value": "color-background"
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "green",
+                          "value": null
+                        },
+                        {
+                          "color": "red",
+                          "value": 1
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 100
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 15,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 31,
+          "options": {
+            "footer": {
+              "enablePagination": true,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "丢包率"
+              }
+            ]
+          },
+          "pluginVersion": "8.5.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "exemplar": true,
+              "expr": "sum by (source_region,target_region) (prober_icmp_duration_seconds{source_region=~\"$source_region\",target_region=~\"$target_region\"})",
+              "format": "table",
+              "instant": true,
+              "interval": "15",
+              "legendFormat": "total",
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "exemplar": true,
+              "expr": "prober_icmp_duration_seconds{phase=\"resolve\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "15",
+              "legendFormat": "resolve",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "exemplar": true,
+              "expr": "prober_icmp_duration_seconds{phase=\"rtt\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "15",
+              "legendFormat": "rtt",
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "exemplar": true,
+              "expr": "prober_icmp_packet_loss_rate{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "15",
+              "legendFormat": "lossrate",
+              "refId": "D"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "prober_icmp_jitter_stddev_seconds{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "interval": "15",
+              "legendFormat": "stddev",
+              "refId": "E"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.5,rate(prober_icmp_duration_seconds_total_bucket{source_region=~\"$source_region\",target_region=~\"$target_region\"}[1m]))",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "0.5",
+              "range": false,
+              "refId": "F"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.9,rate(prober_icmp_duration_seconds_total_bucket{source_region=~\"$source_region\",target_region=~\"$target_region\"}[1m]))",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "legendFormat": "0.9",
+              "range": false,
+              "refId": "G"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "prober_icmp_failed{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
+              "format": "table",
+              "hide": false,
+              "instant": true,
+              "range": false,
+              "refId": "H"
+            }
+          ],
+          "title": "全球拨测质量总览",
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "source_region",
+                    "target_region",
+                    "Value #A",
+                    "Value #B",
+                    "Value #C",
+                    "Value #D",
+                    "Value #E",
+                    "Value #F",
+                    "Value #G",
+                    "Value #H"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {},
+                "indexByName": {
+                  "Value #A": 3,
+                  "Value #B": 4,
+                  "Value #C": 5,
+                  "Value #D": 2,
+                  "Value #E": 6,
+                  "Value #F": 7,
+                  "Value #G": 8,
+                  "Value #H": 9,
+                  "source_region": 0,
+                  "target_region": 1
+                },
+                "renameByName": {
+                  "Value #A": "总耗时",
+                  "Value #B": "解析耗时(resolve)",
+                  "Value #C": "往返耗时(rtt)",
+                  "Value #D": "丢包率",
+                  "Value #E": "stddev",
+                  "Value #F": "50分位耗时",
+                  "Value #G": "90分位耗时",
+                  "Value #H": "失败次数",
+                  "source_region": "源区域",
+                  "target_region": "目的区域"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
       "title": "全球拨测总览",
       "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 3,
-        "x": 0,
-        "y": 1
-      },
-      "id": 28,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.11",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "count(prober_agent_is_alive==1)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "探针存活个数",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            }
-          },
-          "mappings": []
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 6,
-        "x": 3,
-        "y": 1
-      },
-      "id": 29,
-      "options": {
-        "displayLabels": [
-          "name",
-          "value"
-        ],
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "sortBy": "Value",
-          "sortDesc": true,
-          "values": [
-            "value"
-          ]
-        },
-        "pieType": "donut",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "7.5.16",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "count by (region)(prober_agent_is_alive==1)",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "{{region}}",
-          "refId": "A"
-        }
-      ],
-      "title": "探针分布",
-      "type": "piechart"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fill": 0,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 9,
-        "y": 1
-      },
-      "hiddenSeries": false,
-      "id": 36,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": true,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": false,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.5.11",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "expr": "sum by (source_region,target_region) (prober_icmp_failed) > 0",
-          "hide": false,
-          "legendFormat": "{{source_region}} -> {{target_region}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "当前批次拨测失败数",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:749",
-          "decimals": 0,
-          "format": "short",
-          "label": "count",
-          "logBase": 1,
-          "min": "0",
-          "show": true
-        },
-        {
-          "$$hashKey": "object:750",
-          "format": "short",
-          "label": "count",
-          "logBase": 1,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fill": 0,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 5,
-        "x": 14,
-        "y": 1
-      },
-      "hiddenSeries": false,
-      "id": 34,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.5.11",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "expr": "sum(rate(prober_server_receive_points{}[10m]))",
-          "interval": "",
-          "legendFormat": "report-tps",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeRegions": [],
-      "title": "数据上报tps",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:615",
-          "decimals": 0,
-          "format": "reqps",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:616",
-          "format": "short",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "dark-red",
-                  "index": 1,
-                  "text": "NO"
-                },
-                "1": {
-                  "color": "dark-green",
-                  "index": 0,
-                  "text": "YES"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 19,
-        "y": 1
-      },
-      "id": 37,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.11",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "prober_server_task_enabled",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "report-tps",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "task 模块是否启用",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "dark-red",
-                  "index": 1,
-                  "text": "NO"
-                },
-                "1": {
-                  "color": "dark-green",
-                  "index": 0,
-                  "text": "YES"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 5,
-        "x": 19,
-        "y": 5
-      },
-      "id": 38,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.11",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "prober_server_probe_self_enabled",
-          "instant": true,
-          "interval": "",
-          "legendFormat": "report-tps",
-          "range": false,
-          "refId": "A"
-        }
-      ],
-      "title": "probe.self 模块是否启用",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "s7PBkOc4k"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "displayMode": "auto",
-            "filterable": false,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "丢包率"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "percent"
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "gradient-gauge"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 1
-                    },
-                    {
-                      "color": "dark-red",
-                      "value": 5
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.minWidth",
-                "value": 300
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "解析耗时(resolve)"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "往返耗时(rtt)"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "总耗时"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "continuous-BlYlRd"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "stddev"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "源区域"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-text"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "目的区域"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-text"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "50分位耗时"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "90分位耗时"
-            },
-            "properties": [
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "unit",
-                "value": "s"
-              },
-              {
-                "id": "decimals",
-                "value": 2
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "失败次数"
-            },
-            "properties": [
-              {
-                "id": "decimals",
-                "value": 0
-              },
-              {
-                "id": "custom.displayMode",
-                "value": "color-background"
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "red",
-                      "value": 1
-                    }
-                  ]
-                }
-              },
-              {
-                "id": "custom.width",
-                "value": 100
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 15,
-        "w": 24,
-        "x": 0,
-        "y": 9
-      },
-      "id": 31,
-      "options": {
-        "footer": {
-          "enablePagination": true,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": [
-          {
-            "desc": true,
-            "displayName": "丢包率"
-          }
-        ]
-      },
-      "pluginVersion": "8.5.11",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "exemplar": true,
-          "expr": "sum by (source_region,target_region) (prober_icmp_duration_seconds{source_region=~\"$source_region\",target_region=~\"$target_region\"})",
-          "format": "table",
-          "instant": true,
-          "interval": "15",
-          "legendFormat": "total",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "exemplar": true,
-          "expr": "prober_icmp_duration_seconds{phase=\"resolve\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "15",
-          "legendFormat": "resolve",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "exemplar": true,
-          "expr": "prober_icmp_duration_seconds{phase=\"rtt\",source_region=~\"$source_region\",target_region=~\"$target_region\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "15",
-          "legendFormat": "rtt",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "exemplar": true,
-          "expr": "prober_icmp_packet_loss_rate{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "15",
-          "legendFormat": "lossrate",
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "prober_icmp_jitter_stddev_seconds{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "interval": "15",
-          "legendFormat": "stddev",
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "histogram_quantile(0.5,rate(prober_icmp_duration_seconds_total_bucket{source_region=~\"$source_region\",target_region=~\"$target_region\"}[1m]))",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "legendFormat": "0.5",
-          "range": false,
-          "refId": "F"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "histogram_quantile(0.9,rate(prober_icmp_duration_seconds_total_bucket{source_region=~\"$source_region\",target_region=~\"$target_region\"}[1m]))",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "legendFormat": "0.9",
-          "range": false,
-          "refId": "G"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "s7PBkOc4k"
-          },
-          "editorMode": "code",
-          "exemplar": false,
-          "expr": "prober_icmp_failed{source_region=~\"$source_region\",target_region=~\"$target_region\"}",
-          "format": "table",
-          "hide": false,
-          "instant": true,
-          "range": false,
-          "refId": "H"
-        }
-      ],
-      "title": "全球拨测质量总览",
-      "transformations": [
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "source_region",
-                "target_region",
-                "Value #A",
-                "Value #B",
-                "Value #C",
-                "Value #D",
-                "Value #E",
-                "Value #F",
-                "Value #G",
-                "Value #H"
-              ]
-            }
-          }
-        },
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {},
-            "indexByName": {
-              "Value #A": 3,
-              "Value #B": 4,
-              "Value #C": 5,
-              "Value #D": 2,
-              "Value #E": 6,
-              "Value #F": 7,
-              "Value #G": 8,
-              "Value #H": 9,
-              "source_region": 0,
-              "target_region": 1
-            },
-            "renameByName": {
-              "Value #A": "总耗时",
-              "Value #B": "解析耗时(resolve)",
-              "Value #C": "往返耗时(rtt)",
-              "Value #D": "丢包率",
-              "Value #E": "stddev",
-              "Value #F": "50分位耗时",
-              "Value #G": "90分位耗时",
-              "Value #H": "失败次数",
-              "source_region": "源区域",
-              "target_region": "目的区域"
-            }
-          }
-        }
-      ],
-      "type": "table"
     },
     {
       "collapsed": false,
@@ -1023,7 +1024,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 1
       },
       "id": 14,
       "panels": [],
@@ -1037,7 +1038,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "decimals": 2,
       "fill": 0,
@@ -1046,7 +1047,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 2
       },
       "hiddenSeries": false,
       "id": 17,
@@ -1081,7 +1082,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1144,7 +1145,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1152,7 +1153,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 2
       },
       "hiddenSeries": false,
       "id": 3,
@@ -1188,7 +1189,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1241,7 +1242,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 12
       },
       "id": 21,
       "panels": [],
@@ -1255,7 +1256,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1263,7 +1264,7 @@
         "h": 10,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 4,
@@ -1299,7 +1300,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1349,7 +1350,7 @@
       "dashes": false,
       "datasource": {
         "type": "prometheus",
-        "uid": "s7PBkOc4k"
+        "uid": "${prometheus}"
       },
       "fill": 0,
       "fillGradient": 0,
@@ -1357,7 +1358,7 @@
         "h": 10,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 32,
@@ -1393,7 +1394,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "s7PBkOc4k"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "exemplar": true,
@@ -1446,6 +1447,24 @@
   ],
   "templating": {
     "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "network_group",
+          "value": "network_group"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "数据源",
+        "multi": false,
+        "name": "prometheus",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
       {
         "allValue": ".+",
         "current": {
@@ -1523,7 +1542,7 @@
     ]
   },
   "time": {
-    "from": "now-30m",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -1536,6 +1555,6 @@
   "timezone": "",
   "title": "ICMP拨测",
   "uid": "lq87sNI4k",
-  "version": 106,
+  "version": 115,
   "weekStart": ""
 }
