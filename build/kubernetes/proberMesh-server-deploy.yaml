@@ -13,10 +13,7 @@ spec:
       labels:
         name: probermesh-server-deploy
     spec:
-      nodeSelector:
-        project: "jczc"
       imagePullSecrets:
-        # secret 需要创建
         - name: alicloud-hub
       volumes:
         - name: probermesh-cfg
@@ -31,11 +28,9 @@ spec:
             - -server.http.listen.addr=0.0.0.0:6001
             - -server.aggregation.interval=15s
             - -server.probe.file=/opt/app/probermesh.yaml
-          image: boker-hub-registry.cn-shanghai.cr.aliyuncs.com/ops/probermesh:v0.0.1
+          image: boker-hub-registry.cn-shanghai.cr.aliyuncs.com/ops/probermesh:v0.0.6
           imagePullPolicy: Always
           ports:
-            # 容器内部端口 targetPort 映射 containerPort
-            # targetPort和containerPort必须一致
             - containerPort: 6000
             - containerPort: 6001
           resources:
@@ -43,8 +38,8 @@ spec:
               cpu: "300m"
               memory: "300Mi"
             requests:
-              cpu: "300m"
-              memory: "300Mi"
+              cpu: "50m"
+              memory: "50Mi"
           livenessProbe:
             tcpSocket:
               port: 6000
@@ -97,7 +92,6 @@ spec:
   ports:
     - port: 6001
       name: metric
-      # 容器内部端口
       targetPort: 6001
   selector:
     name: probermesh-server-deploy
