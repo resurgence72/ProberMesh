@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"probermesh/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -16,8 +17,10 @@ type proberJob struct {
 	targets      []string
 	sourceRegion string
 	targetRegion string
-	r            *rpcCli
-	ch           chan *pb.PorberResultReq
+
+	http config.HTTPProbe
+	r    *rpcCli
+	ch   chan *pb.PorberResultReq
 
 	m sync.Mutex
 }
@@ -81,7 +84,7 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 			if pType == util.ProbeICMPType {
 				p.ch <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
 			} else {
-				p.ch <- probeHTTP(ctx, target, p.sourceRegion, p.targetRegion)
+				p.ch <- probeHTTP(ctx, target, p.http, p.sourceRegion, p.targetRegion)
 			}
 		}(target)
 	}
