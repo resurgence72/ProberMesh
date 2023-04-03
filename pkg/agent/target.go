@@ -85,6 +85,7 @@ func (t *targetManager) prober() {
 			pj := &proberJob{
 				proberType:   tt.ProberType,
 				targets:      tt.Targets,
+				http:         tt.HttpProbe,
 				sourceRegion: t.selfRegion,
 				targetRegion: region,
 				ch:           t.ptsChan,
