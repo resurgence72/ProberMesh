@@ -11,72 +11,28 @@ import (
 	"net/http/httptrace"
 	"net/textproto"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	cfg "probermesh/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
-	"github.com/alecthomas/units"
-	"github.com/prometheus/common/config"
 	pconfig "github.com/prometheus/common/config"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/publicsuffix"
 )
-
-type Regexp struct {
-	*regexp.Regexp
-	original string
-}
-
-type HeaderMatch struct {
-	Header       string `yaml:"header,omitempty"`
-	Regexp       Regexp `yaml:"regexp,omitempty"`
-	AllowMissing bool   `yaml:"allow_missing,omitempty"`
-}
 
 type byteCounter struct {
 	io.ReadCloser
 	n int64
 }
 
-type HTTPProbe struct {
-	ValidStatusCodes             []int                   `yaml:"valid_status_codes,omitempty"`  // http响应码校验 Defaults to 2xx.
-	ValidHTTPVersions            []string                `yaml:"valid_http_versions,omitempty"` // http版本校验
-	IPProtocol                   string                  `yaml:"preferred_ip_protocol,omitempty"`
-	IPProtocolFallback           bool                    `yaml:"ip_protocol_fallback,omitempty"`
-	NoFollowRedirects            *bool                   `yaml:"no_follow_redirects,omitempty"`             // 允许重定向
-	FailIfSSL                    bool                    `yaml:"fail_if_ssl,omitempty"`                     // ssl则失败
-	FailIfNotSSL                 bool                    `yaml:"fail_if_not_ssl,omitempty"`                 // 非ssl则失败
-	Method                       string                  `yaml:"method,omitempty"`                          // 请求方法
-	Headers                      map[string]string       `yaml:"headers,omitempty"`                         // 携带的请求头
-	FailIfBodyMatchesRegexp      []Regexp                `yaml:"fail_if_body_matches_regexp,omitempty"`     // body匹配上则失败
-	FailIfBodyNotMatchesRegexp   []Regexp                `yaml:"fail_if_body_not_matches_regexp,omitempty"` // body没匹配上则失败
-	FailIfHeaderMatchesRegexp    []HeaderMatch           `yaml:"fail_if_header_matches,omitempty"`          // header匹配上则失败
-	FailIfHeaderNotMatchesRegexp []HeaderMatch           `yaml:"fail_if_header_not_matches,omitempty"`      // header没正则匹配上则失败
-	Body                         string                  `yaml:"body,omitempty"`                            // 请求要携带的信息
-	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,inline"`
-	Compression                  string                  `yaml:"compression,omitempty"`     // 指定压缩算法
-	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"` // body大小限制
-}
-
-func buildDefaultHTTPProbe() HTTPProbe {
-	return HTTPProbe{
-		IPProtocolFallback: true,
-		// 是否重定向和是否允许http2
-		HTTPClientConfig: config.DefaultHTTPClientConfig,
-		IPProtocol:       "ip4",
-		// 默认匹配2xx
-		//ValidStatusCodes: []int{200},
-	}
-}
-
-func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
+func probeHTTP(ctx context.Context, target string, httpProbe cfg.HTTPProbe, sourceRegion, targetRegion string) *pb.PorberResultReq {
 	var (
 		redirects int
-		module    = buildDefaultHTTPProbe()
+		module    = httpProbe
 
 		defaultHTTPProberResultReq = &pb.PorberResultReq{
 			ProberType:   util.ProbeHTTPType,
@@ -186,7 +142,7 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 
 	var body io.Reader
 	var success bool
-	//var respBodyBytes int64
+	// var respBodyBytes int64
 
 	// If a body is configured, add it to the request.
 	if httpConfig.Body != "" {
@@ -301,10 +257,10 @@ func probeHTTP(ctx context.Context, target, sourceRegion, targetRegion string) *
 			}
 		}
 
-		//// If there's a configured body_size_limit, wrap the body in the response in a http.MaxBytesReader.
-		//// This will read up to BodySizeLimit bytes from the body, and return an error if the response is
-		//// larger. It forwards the Close call to the original resp.Body to make sure the TCP connection is
-		//// correctly shut down. The limit is applied _after decompression_ if applicable.
+		// // If there's a configured body_size_limit, wrap the body in the response in a http.MaxBytesReader.
+		// // This will read up to BodySizeLimit bytes from the body, and return an error if the response is
+		// // larger. It forwards the Close call to the original resp.Body to make sure the TCP connection is
+		// // correctly shut down. The limit is applied _after decompression_ if applicable.
 		if httpConfig.BodySizeLimit > 0 {
 			resp.Body = http.MaxBytesReader(nil, resp.Body, int64(httpConfig.BodySizeLimit))
 		}
