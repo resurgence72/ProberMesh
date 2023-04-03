@@ -42,6 +42,5 @@ RUN alpine_version=`cat /etc/issue | head -1 | awk '{print $5}'` \
         && apk add --no-cache bash bash-doc bash-completion \
         && rm -rf /var/cache/apk/*
 
-EXPOSE 6000
-EXPOSE 6001
+EXPOSE 6000 6001
 ENTRYPOINT ["/opt/app/probermesh"]
