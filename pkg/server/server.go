@@ -53,6 +53,7 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	}
 
 	ctxAll, cancelAll := context.WithCancel(context.Background())
+	defer cancelAll()
 
 	// 解析agg interval
 	aggD, err := util.ParseDuration(so.AggregationInterval)
