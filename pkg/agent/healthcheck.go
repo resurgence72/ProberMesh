@@ -50,6 +50,7 @@ func (h *healthCheck) report() {
 		}
 
 		if h.ready != nil {
+			close(h.ready)
 			h.ready = nil
 		}
 	})
