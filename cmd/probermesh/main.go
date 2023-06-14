@@ -141,7 +141,7 @@ dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，�
 	flag.StringVar(&agentOption.ReportAddr, "agent.rpc.report.addr", "localhost:6000", "server端RPC上报地址")
 	flag.StringVar(&agentOption.PInterval, "agent.probe.interval", "15s", "agent端探测周期")
 	flag.StringVar(&agentOption.SInterval, "agent.sync.interval", "1m", "agent端同步targets周期")
-	flag.StringVar(&agentOption.Region, "agent.region", "china-shanghai", "agent端所属region/zone;不指定默认自动获取regionID")
+	flag.StringVar(&agentOption.Region, "agent.region", "", "agent端所属region/zone;不指定默认自动获取regionID")
 	flag.StringVar(&agentOption.UInterval, "agent.upgrade.interval", "1m", "agent端检查upgrade周期; 仅在指定 -agent.upgrade 后生效")
 	flag.StringVar(&agentOption.NetworkType, "agent.icmp.network-type", "intranet", `agent ICMP探测agent自身上报IP类型;
 intranet: agent上报内网IP地址，用与构建内网维度icmp网格；
