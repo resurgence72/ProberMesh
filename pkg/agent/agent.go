@@ -81,7 +81,6 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 		}, func(err error) {
 			cancelAll()
 			close(ptsChan)
-			close(beforeReady)
 		})
 	}
 
