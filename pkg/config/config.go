@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/alecthomas/units"
 	"github.com/prometheus/common/config"
@@ -65,12 +66,16 @@ type HTTPProbe struct {
 	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
 
-var DefaultHttpProbe = HTTPProbe{
-	IPProtocolFallback: true,
-	HTTPClientConfig:   config.DefaultHTTPClientConfig,
-	IPProtocol:         "ip4",
-	ValidStatusCodes:   []int{200},
-}
+var (
+	DefaultHttpProbe = HTTPProbe{
+		IPProtocolFallback: true,
+		HTTPClientConfig:   config.DefaultHTTPClientConfig,
+		IPProtocol:         "ip4",
+		ValidStatusCodes:   []int{200},
+	}
+	filePath string
+	m        sync.Mutex
+)
 
 func (s *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	*s = DefaultHttpProbe
@@ -226,15 +231,19 @@ func (s *HeaderMatch) UnmarshalYAML(unmarshal func(interface{}) error) error {
 var cfg *ProberMeshConfig
 
 func InitConfig(path string) error {
-	config, err := loadFile(path)
+	meshConfig, err := loadFile(path)
 	if err != nil {
 		return err
 	}
-	cfg = config
+	cfg = meshConfig
+	filePath = path
 	return nil
 }
 
 func Get() *ProberMeshConfig {
+	m.Lock()
+	defer m.Unlock()
+
 	if cfg == nil {
 		// 防止不指定配置参数时遍历pcs报错
 		return &ProberMeshConfig{ProberConfigs: nil}
@@ -248,6 +257,10 @@ func loadFile(fileName string) (*ProberMeshConfig, error) {
 		return nil, err
 	}
 	return load(bytes)
+}
+
+func ReloadConfig() error {
+	return InitConfig(filePath)
 }
 
 func load(bytes []byte) (*ProberMeshConfig, error) {

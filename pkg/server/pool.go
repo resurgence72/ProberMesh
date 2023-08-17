@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"probermesh/pkg/config"
@@ -12,7 +13,8 @@ import (
 
 type targetsPool struct {
 	pool             map[string]map[string]*config.ProberConfig
-	cfg              *config.ProberMeshConfig
+	cfgFn            func() *config.ProberMeshConfig
+	reloadCh         chan chan error
 	discovery        discoveryType
 	probeSelfEnabled bool
 
@@ -31,7 +33,8 @@ var tp *targetsPool
 
 func newTargetsPool(
 	ctx context.Context,
-	cfg *config.ProberMeshConfig,
+	cfgFn func() *config.ProberMeshConfig,
+	reloadCh chan chan error,
 	ready chan struct{},
 	dt string,
 	probeSelfEnabled bool,
@@ -40,7 +43,8 @@ func newTargetsPool(
 
 	tp = &targetsPool{
 		pool:             make(map[string]map[string]*config.ProberConfig),
-		cfg:              cfg,
+		cfgFn:            cfgFn,
+		reloadCh:         reloadCh,
 		probeSelfEnabled: probeSelfEnabled,
 		done:             ctx,
 		ready:            ready,
@@ -58,7 +62,19 @@ func newTargetsPool(
 }
 
 func (t *targetsPool) start() {
-	for _, pc := range t.cfg.ProberConfigs {
+	t.loadPool()
+	<-t.done.Done()
+	return
+}
+
+func (t *targetsPool) reloadPool() error {
+	t.loadPool()
+	return nil
+}
+
+func (t *targetsPool) loadPool() {
+	fmt.Println("loadPool ", t.cfgFn().ProberConfigs[0].Region)
+	for _, pc := range t.cfgFn().ProberConfigs {
 		/*
 			{
 				cn-shanghai: {
@@ -78,9 +94,6 @@ func (t *targetsPool) start() {
 			t.pool[pc.Region] = map[string]*config.ProberConfig{pc.ProberType: pc}
 		}
 	}
-
-	<-t.done.Done()
-	return
 }
 
 func (t *targetsPool) updatePool() {

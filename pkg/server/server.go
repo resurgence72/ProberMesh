@@ -31,6 +31,11 @@ type ProberMeshServerOption struct {
 	ProbeSelf   bool
 }
 
+type reloader struct {
+	name     string
+	reloader func() error
+}
+
 func BuildServerMode(so *ProberMeshServerOption) {
 	verify := func() error {
 		if discoveryType(so.ICMPDiscoveryType) == StaticDiscovery && len(so.TargetsConfigPath) == 0 {
@@ -68,10 +73,32 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		return
 	}
 
-	var g run.Group
+	var (
+		g        run.Group
+		reloadCh = make(chan chan error)
 
-	// 首次上报后 再updatePool,否则update不到数据
-	ready := make(chan struct{})
+		// 首次上报后 再updatePool,否则update不到数据
+		ready = make(chan struct{})
+	)
+
+	pool := newTargetsPool(
+		ctxAll,
+		config.Get,
+		reloadCh,
+		ready,
+		so.ICMPDiscoveryType,
+		so.ProbeSelf,
+	)
+	reloaders := []reloader{
+		{
+			name:     "config",
+			reloader: config.ReloadConfig,
+		},
+		{
+			name:     "pool",
+			reloader: pool.reloadPool,
+		},
+	}
 	{
 		if so.ProbeSelf {
 			proberMeshServerProbeSelfEnabledGauge.Set(1)
@@ -80,13 +107,7 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		}
 		// 初始化targetsPool
 		g.Add(func() error {
-			newTargetsPool(
-				ctxAll,
-				config.Get(),
-				ready,
-				so.ICMPDiscoveryType,
-				so.ProbeSelf,
-			).start()
+			pool.start()
 			return nil
 		}, func(err error) {
 			cancelAll()
@@ -124,11 +145,19 @@ func BuildServerMode(so *ProberMeshServerOption) {
 
 	{
 		tg := newTaskGroup(so.TaskEnabled, so.TaskMetaDir)
-
 		// http server
 		mux := http.NewServeMux()
 		mux.Handle("/metrics", promhttp.Handler())
 		mux.HandleFunc("/-/upgrade", util.WithJSONHeader(update))
+		mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
+			ch := make(chan error)
+			reloadCh <- ch
+			if err = <-ch; err != nil {
+				_, _ = w.Write([]byte(err.Error()))
+			} else {
+				_, _ = w.Write([]byte("ok"))
+			}
+		})
 		if so.TaskEnabled {
 			logrus.Warnln("open server task dispatch functions")
 			proberMeshServerTaskEnabledGauge.Set(1)
@@ -171,6 +200,23 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	}
 
 	{
+		// reload
+		g.Add(func() error {
+			for {
+				select {
+				case ch := <-reloadCh:
+					ch <- reloadConfig(reloaders)
+				case <-ctxAll.Done():
+					return nil
+				}
+			}
+		}, func(e error) {
+			logrus.Warnln("reload manager over")
+			cancelAll()
+		})
+	}
+
+	{
 		// 信号管理
 		term := make(chan os.Signal, 1)
 		signal.Notify(term, os.Interrupt, syscall.SIGTERM)
@@ -192,4 +238,25 @@ func BuildServerMode(so *ProberMeshServerOption) {
 	}
 
 	g.Run()
+}
+
+func reloadConfig(reloaders []reloader) error {
+	logrus.Warnln("reloaders start reload")
+
+	failed := false
+	for _, reloader := range reloaders {
+		if err := reloader.reloader(); err != nil {
+			failed = true
+
+			logrus.WithFields(logrus.Fields{
+				"status":   "failed",
+				"reloader": reloader.name,
+			}).Errorln("reloader failed")
+		}
+	}
+
+	if failed {
+		return errors.New("one or more reloader reload failed")
+	}
+	return nil
 }
