@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"probermesh/pkg/config"
@@ -73,7 +72,6 @@ func (t *targetsPool) reloadPool() error {
 }
 
 func (t *targetsPool) loadPool() {
-	fmt.Println("loadPool ", t.cfgFn().ProberConfigs[0].Region)
 	for _, pc := range t.cfgFn().ProberConfigs {
 		/*
 			{
