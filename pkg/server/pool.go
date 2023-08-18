@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"probermesh/pkg/config"
@@ -19,6 +20,8 @@ type targetsPool struct {
 
 	done  context.Context
 	ready chan struct{}
+
+	m sync.Mutex
 }
 
 type discoveryType string
@@ -72,26 +75,18 @@ func (t *targetsPool) reloadPool() error {
 }
 
 func (t *targetsPool) loadPool() {
-	for _, pc := range t.cfgFn().ProberConfigs {
-		/*
-			{
-				cn-shanghai: {
-					icmp: icmpConfig,
-					http: httpConfig,
-				}
-			}
-		*/
-		// dynamic情况下忽略配置文件icmp target
-		// if t.discovery == DynamicDiscovery && pc.ProberType == util.ProbeICMPType {
-		//	continue
-		// }
+	t.m.Lock()
+	defer t.m.Unlock()
 
-		if pcm, ok := t.pool[pc.Region]; ok {
+	pool := make(map[string]map[string]*config.ProberConfig)
+	for _, pc := range t.cfgFn().ProberConfigs {
+		if pcm, ok := pool[pc.Region]; ok {
 			pcm[pc.ProberType] = pc
 		} else {
-			t.pool[pc.Region] = map[string]*config.ProberConfig{pc.ProberType: pc}
+			pool[pc.Region] = map[string]*config.ProberConfig{pc.ProberType: pc}
 		}
 	}
+	t.pool = pool
 }
 
 func (t *targetsPool) updatePool() {
