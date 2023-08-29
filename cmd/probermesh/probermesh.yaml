@@ -1,6 +1,14 @@
 prober_configs:
   - prober_type: http
     region: project-01
+    http:                     # 对标 blackbox_exporter 的http配置段
+      valid_status_codes:
+        - 200
+        - 201
+      method: GET
+      headers:
+        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+      fail_if_body_matches_regexp: text.*
     targets:
       - http://www.baidu.com
       - http://www.taobao.com

@@ -143,15 +143,33 @@ Usage of ./probermesh:
 cat probermesh.yaml
 prober_configs:
   - prober_type: http
-    region: ali-cn-beijing
+    region: project-01
+    http:                     # http配置端对标 blackbox_exporter，原生适配其http配置段
+      valid_status_codes:
+        - 200
+        - 201
+      method: GET
+      headers:
+        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+      fail_if_body_matches_regexp: text.*
     targets:
       - http://www.baidu.com
       - http://www.taobao.com
+      - www.ladjflajfl.ccc
+  - prober_type: http
+    region: cn-chengdu
+    targets:
+      - www.baidu.com
+      - www.taobao.com
   - prober_type: icmp
-    region: gcp-ap-southeast-1
+    region: cn-hangzhou
+    targets:
+      - 180.101.49.12
+      - 8.8.8.8
+  - prober_type: icmp
+    region: cn-shanghai
     targets:
       - 8.8.8.8
-      - www.baidu.com
 
 
 
