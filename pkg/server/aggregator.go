@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -41,6 +42,26 @@ type aggProberResult struct {
 
 var aggregator *Aggregator
 
+func clean(collector prometheus.Collector, ks []string) {
+	defer func() {
+		_ = recover()
+	}()
+	switch c := collector.(type) {
+	case prometheus.GaugeVec:
+		c.DeleteLabelValues(ks...)
+	case prometheus.HistogramVec:
+		c.DeleteLabelValues(ks...)
+	case prometheus.CounterVec:
+		c.DeleteLabelValues(ks...)
+	}
+}
+
+func rangeClean(collectors []prometheus.Collector, ks []string) {
+	for _, c := range collectors {
+		clean(c, ks)
+	}
+}
+
 func newAggregator(
 	ctx context.Context,
 	interval time.Duration,
@@ -51,29 +72,25 @@ func newAggregator(
 	cacheInterval := time.Duration(ratio) * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
 	hmh.OnEvicted(func(key string, i interface{}) {
-		defer func() {
-			_ = recover()
-		}()
-
-		ks := util.SplitKey(key)
+		collectors := []prometheus.Collector{
+			httpProberDurationGaugeVec,
+			httpProberFailedGaugeVec,
+			httpProberStatusCodeGaugeVec,
+		}
 		// 设置删除回调函数; 当此次agg周期内未上报相同key时，说明当前series已恢复，就不要再暴露这个series了
-		httpProberDurationGaugeVec.DeleteLabelValues(ks...)
-		httpProberFailedGaugeVec.DeleteLabelValues(ks...)
+		rangeClean(collectors, util.SplitKey(key))
 	})
 
 	imh := cache.New(cacheInterval, cacheInterval)
 	imh.OnEvicted(func(key string, i interface{}) {
-		defer func() {
-			// 由于标签数量不同导致prom-go-sdk报错
-			_ = recover()
-		}()
-
-		ks := util.SplitKey(key)
-		icmpProberFailedGaugeVec.DeleteLabelValues(ks...)
-		icmpProberPacketLossRateGaugeVec.DeleteLabelValues(ks...)
-		icmpProberJitterStdDevGaugeVec.DeleteLabelValues(ks...)
-		icmpProberDurationHistogramVec.DeleteLabelValues(ks...)
-		icmpProberDurationGaugeVec.DeleteLabelValues(ks...)
+		collectors := []prometheus.Collector{
+			icmpProberFailedGaugeVec,
+			icmpProberPacketLossRateGaugeVec,
+			icmpProberJitterStdDevGaugeVec,
+			icmpProberDurationGaugeVec,
+			icmpProberDurationHistogramVec,
+		}
+		rangeClean(collectors, util.SplitKey(key))
 	})
 
 	aggregator = &Aggregator{
@@ -167,7 +184,7 @@ func (a *Aggregator) agg() {
 			// 保证算agg时，分母一定为成功的job数
 			// 防止: 成功4台,失败1台；算agg: 理想 total/4, 结果 total/5, 反而会拉低实际值
 			container := containers[key]
-			
+
 			// append code
 			container.statusCodes = append(container.statusCodes, pr.ProberStatusCode)
 
