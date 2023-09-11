@@ -138,13 +138,38 @@ func (t *targetManager) getTargets() {
 	}
 
 	var msg string
-	for region, pcs := range resp.Targets {
+	for r, pcs := range resp.Targets {
 		var batch int
-		for _, pc := range pcs {
+		for i := range pcs {
+			pc := pcs[i]
 			batch += len(pc.Targets)
+
+			compileProbeRegexp(&pc.HttpProbe)
 		}
-		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", region, batch)
+		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", r, batch)
 	}
-	logrus.Warnln("agent get current target list msg: ", msg)
+	logrus.Debugln("agent get current target list msg: ", msg)
 	t.targets = resp.Targets
+}
+
+func compileProbeRegexp(probe *config.HTTPProbe) {
+	for i := range probe.FailIfBodyMatchesRegexp {
+		regexp, _ := config.NewRegexp(probe.FailIfBodyMatchesRegexp[i].Original)
+		probe.FailIfBodyMatchesRegexp[i] = regexp
+	}
+
+	for i := range probe.FailIfBodyNotMatchesRegexp {
+		regexp, _ := config.NewRegexp(probe.FailIfBodyNotMatchesRegexp[i].Original)
+		probe.FailIfBodyNotMatchesRegexp[i] = regexp
+	}
+
+	for i := range probe.FailIfHeaderMatchesRegexp {
+		regexp, _ := config.NewRegexp(probe.FailIfHeaderMatchesRegexp[i].Regexp.Original)
+		probe.FailIfHeaderMatchesRegexp[i].Regexp = regexp
+	}
+
+	for i := range probe.FailIfHeaderNotMatchesRegexp {
+		regexp, _ := config.NewRegexp(probe.FailIfHeaderNotMatchesRegexp[i].Regexp.Original)
+		probe.FailIfHeaderNotMatchesRegexp[i].Regexp = regexp
+	}
 }
