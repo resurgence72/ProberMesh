@@ -47,12 +47,14 @@ func clean(collector prometheus.Collector, ks []string) {
 		_ = recover()
 	}()
 	switch c := collector.(type) {
-	case prometheus.GaugeVec:
+	case *prometheus.GaugeVec:
 		c.DeleteLabelValues(ks...)
-	case prometheus.HistogramVec:
+	case *prometheus.HistogramVec:
 		c.DeleteLabelValues(ks...)
-	case prometheus.CounterVec:
+	case *prometheus.CounterVec:
 		c.DeleteLabelValues(ks...)
+	default:
+		logrus.Errorln("unsupported collector type", reflect.TypeOf(c))
 	}
 }
 
