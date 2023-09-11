@@ -61,7 +61,7 @@ type HTTPProbe struct {
 	FailIfHeaderMatchesRegexp    []HeaderMatch           `yaml:"fail_if_header_matches,omitempty"`
 	FailIfHeaderNotMatchesRegexp []HeaderMatch           `yaml:"fail_if_header_not_matches,omitempty"`
 	Body                         string                  `yaml:"body,omitempty"`
-	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,inline"`
+	HTTPClientConfig             config.HTTPClientConfig `yaml:"http_client_config,omitempty"`
 	Compression                  string                  `yaml:"compression,omitempty"`
 	BodySizeLimit                units.Base2Bytes        `yaml:"body_size_limit,omitempty"`
 }
