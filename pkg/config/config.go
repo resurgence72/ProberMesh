@@ -172,7 +172,7 @@ func isCompressionAcceptEncodingValid(encoding, acceptEncoding string) bool {
 
 type Regexp struct {
 	*regexp.Regexp
-	original string
+	Original string
 }
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface.
@@ -181,11 +181,11 @@ func (re *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
-	r, err := NewRegexp(s)
+	_, err := regexp.Compile(s)
 	if err != nil {
 		return fmt.Errorf("\"Could not compile regular expression\" regexp=\"%s\"", s)
 	}
-	*re = r
+	*re = Regexp{Original: s}
 	return nil
 }
 
@@ -193,14 +193,14 @@ func NewRegexp(s string) (Regexp, error) {
 	regex, err := regexp.Compile(s)
 	return Regexp{
 		Regexp:   regex,
-		original: s,
+		Original: s,
 	}, err
 }
 
 // MarshalYAML implements the yaml.Marshaler interface.
 func (re Regexp) MarshalYAML() (interface{}, error) {
-	if re.original != "" {
-		return re.original, nil
+	if re.Original != "" {
+		return re.Original, nil
 	}
 	return nil, nil
 }
