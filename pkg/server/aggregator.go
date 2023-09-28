@@ -43,27 +43,46 @@ type aggProberResult struct {
 
 var aggregator *Aggregator
 
-func clean(collector prometheus.Collector, ks []string) {
+func clean(key string, metric any) {
+	var deleted bool
 	defer func() {
 		_ = recover()
+
+		if !deleted {
+			logrus.Errorln("clean func not hit target labelValues: ", key)
+		}
 	}()
+
+	collector, ok := metric.(prometheus.Collector)
+	if !ok {
+		return
+	}
+
+	ks := util.SplitKey(key)
 	switch c := collector.(type) {
 	case *prometheus.GaugeVec:
-		c.DeleteLabelValues(ks...)
+		deleted = c.DeleteLabelValues(ks...)
 	case *prometheus.HistogramVec:
-		c.DeleteLabelValues(ks...)
+		deleted = c.DeleteLabelValues(ks...)
 	case *prometheus.CounterVec:
-		c.DeleteLabelValues(ks...)
+		deleted = c.DeleteLabelValues(ks...)
 	default:
 		logrus.Errorln("unsupported collector type", reflect.TypeOf(c))
 	}
 }
 
-func rangeClean(collectors []prometheus.Collector, ks []string) {
-	for _, c := range collectors {
-		clean(c, ks)
-	}
-}
+//func rangeClean(collectors []prometheus.Collector, ks []string) {
+//	var deleted bool
+//	for _, c := range collectors {
+//		if deleted = clean(c, ks); deleted {
+//			break
+//		}
+//	}
+//
+//	if !deleted {
+//		logrus.Errorln("rangeClean func not hit target labelValues ", util.JoinKey(ks...))
+//	}
+//}
 
 func newAggregator(
 	ctx context.Context,
@@ -74,26 +93,28 @@ func newAggregator(
 	// 设置agg频率，防止边界情况下拉取时被删除导致拉取不到正常上报数据
 	cacheInterval := time.Duration(ratio) * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
-	hmh.OnEvicted(func(key string, i interface{}) {
-		collectors := []prometheus.Collector{
-			httpProberDurationGaugeVec,
-			httpProberFailedGaugeVec,
-			httpProberStatusCodeGaugeVec,
-		}
+	hmh.OnEvicted(func(key string, metric any) {
+		//collectors := []prometheus.Collector{
+		//	httpProberDurationGaugeVec,
+		//	httpProberFailedGaugeVec,
+		//	httpProberStatusCodeGaugeVec,
+		//}
 		// 设置删除回调函数; 当此次agg周期内未上报相同key时，说明当前series已恢复，就不要再暴露这个series了
-		rangeClean(collectors, util.SplitKey(key))
+		//rangeClean(collectors, util.SplitKey(key))
+		clean(key, metric)
 	})
 
 	imh := cache.New(cacheInterval, cacheInterval)
-	imh.OnEvicted(func(key string, i interface{}) {
-		collectors := []prometheus.Collector{
-			icmpProberFailedGaugeVec,
-			icmpProberPacketLossRateGaugeVec,
-			icmpProberJitterStdDevGaugeVec,
-			icmpProberDurationGaugeVec,
-			icmpProberDurationHistogramVec,
-		}
-		rangeClean(collectors, util.SplitKey(key))
+	imh.OnEvicted(func(key string, metric any) {
+		//collectors := []prometheus.Collector{
+		//	icmpProberFailedGaugeVec,
+		//	icmpProberPacketLossRateGaugeVec,
+		//	icmpProberJitterStdDevGaugeVec,
+		//	icmpProberDurationGaugeVec,
+		//	icmpProberDurationHistogramVec,
+		//}
+		//rangeClean(collectors, util.SplitKey(key))
+		clean(key, metric)
 	})
 
 	aggregator = &Aggregator{
@@ -237,7 +258,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 				agg.tlsVersion,
 			}
 			httpSSLEarliestCertExpiryGaugeVec.WithLabelValues(ks...).Set(float64(agg.tlsExpiry))
-			a.setCache(a.httpMetricsHold, ks...)
+			a.setCache(a.httpMetricsHold, httpSSLEarliestCertExpiryGaugeVec, ks...)
 		}
 
 		// 打点 httpProberStatusCodeGaugeVec
@@ -256,7 +277,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			agg.targetAddr,
 		}
 		httpProberStatusCodeGaugeVec.WithLabelValues(ks...).Set(float64(code))
-		a.setCache(a.httpMetricsHold, ks...)
+		a.setCache(a.httpMetricsHold, httpProberStatusCodeGaugeVec, ks...)
 
 		// 打点 httpProberFailedGaugeVec
 		ks = []string{
@@ -269,7 +290,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 
 		// reset http httpProberFailedGaugeVec指标的缓存
 		// 为什么要使用cache缓存，因为reason指标有状态，当reason过期是，需要删除old series；否则当前key的记录会一直被暴露
-		a.setCache(a.httpMetricsHold, ks...)
+		a.setCache(a.httpMetricsHold, httpProberFailedGaugeVec, ks...)
 
 		// 打点 httpProberDurationGaugeVec
 		for stage, total := range agg.phase {
@@ -283,7 +304,7 @@ func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
 			// 每个 sR->tR 的每个stage的平均
 			httpProberDurationGaugeVec.WithLabelValues(ks...).Set(total / float64(agg.batchCnt))
 			// key不同(stage),需要另存一个key
-			a.setCache(a.httpMetricsHold, ks...)
+			a.setCache(a.httpMetricsHold, httpProberDurationGaugeVec, ks...)
 		}
 	}
 }
@@ -300,7 +321,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 		icmpProberFailedGaugeVec.WithLabelValues(ks...).Set(float64(agg.failedCnt))
 
 		// cache icmp的key
-		a.setCache(a.icmpMetricsHold, ks...)
+		a.setCache(a.icmpMetricsHold, icmpProberFailedGaugeVec, ks...)
 
 		var icmpDurationsTotal float64
 		for stage, total := range agg.phase {
@@ -323,7 +344,7 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 				icmpProberDurationGaugeVec.WithLabelValues(ks...).Set(stageAgg)
 
 				// 由于label不同(stage),所以要另存一个key
-				a.setCache(a.icmpMetricsHold, ks...)
+				a.setCache(a.icmpMetricsHold, icmpProberDurationGaugeVec, ks...)
 
 				icmpDurationsTotal += total
 			}
@@ -334,8 +355,8 @@ func (a *Aggregator) dotICMP(icmp map[string]*aggProberResult) {
 	}
 }
 
-func (a *Aggregator) setCache(c *cache.Cache, ks ...string) {
-	c.SetDefault(util.JoinKey(ks...), nil)
+func (a *Aggregator) setCache(c *cache.Cache, v any, ks ...string) {
+	c.SetDefault(util.JoinKey(ks...), v)
 }
 
 func (a *Aggregator) reset() {
