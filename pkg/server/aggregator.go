@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -71,19 +72,6 @@ func clean(key string, metric any) {
 	}
 }
 
-//func rangeClean(collectors []prometheus.Collector, ks []string) {
-//	var deleted bool
-//	for _, c := range collectors {
-//		if deleted = clean(c, ks); deleted {
-//			break
-//		}
-//	}
-//
-//	if !deleted {
-//		logrus.Errorln("rangeClean func not hit target labelValues ", util.JoinKey(ks...))
-//	}
-//}
-
 func newAggregator(
 	ctx context.Context,
 	interval time.Duration,
@@ -94,26 +82,11 @@ func newAggregator(
 	cacheInterval := time.Duration(ratio) * interval
 	hmh := cache.New(cacheInterval, cacheInterval)
 	hmh.OnEvicted(func(key string, metric any) {
-		//collectors := []prometheus.Collector{
-		//	httpProberDurationGaugeVec,
-		//	httpProberFailedGaugeVec,
-		//	httpProberStatusCodeGaugeVec,
-		//}
-		// 设置删除回调函数; 当此次agg周期内未上报相同key时，说明当前series已恢复，就不要再暴露这个series了
-		//rangeClean(collectors, util.SplitKey(key))
 		clean(key, metric)
 	})
 
 	imh := cache.New(cacheInterval, cacheInterval)
 	imh.OnEvicted(func(key string, metric any) {
-		//collectors := []prometheus.Collector{
-		//	icmpProberFailedGaugeVec,
-		//	icmpProberPacketLossRateGaugeVec,
-		//	icmpProberJitterStdDevGaugeVec,
-		//	icmpProberDurationGaugeVec,
-		//	icmpProberDurationHistogramVec,
-		//}
-		//rangeClean(collectors, util.SplitKey(key))
 		clean(key, metric)
 	})
 
