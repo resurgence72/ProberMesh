@@ -18,7 +18,7 @@ const (
 	ProjectName         = "probermesh"
 	ProbeHTTPType       = "http"
 	ProbeICMPType       = "icmp"
-	defaultKeySeparator = "_"
+	defaultKeySeparator = string('\xfe')
 )
 
 // 设置随机延迟，防止并发探测量过大
