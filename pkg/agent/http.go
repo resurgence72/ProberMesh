@@ -189,7 +189,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.Transport.RoundTrip(req)
 }
 
-func matchRegularExpressionsOnHeaders(header http.Header, httpConfig config.HTTPProbe) bool {
+func matchRegularExpressionsOnHeaders(header http.Header, httpConfig *config.HTTPProbe) bool {
 	for _, headerMatchSpec := range httpConfig.FailIfHeaderMatchesRegexp {
 		values := header[textproto.CanonicalMIMEHeaderKey(headerMatchSpec.Header)]
 		if len(values) == 0 {
@@ -258,7 +258,7 @@ func getDecompressionReader(algorithm string, origBody io.ReadCloser) (io.ReadCl
 	}
 }
 
-func matchRegularExpressions(reader io.Reader, httpConfig config.HTTPProbe) bool {
+func matchRegularExpressions(reader io.Reader, httpConfig *config.HTTPProbe) bool {
 	body, err := io.ReadAll(reader)
 	if err != nil {
 		// level.Error(logger).Log("msg", "Error reading HTTP body", "err", err)

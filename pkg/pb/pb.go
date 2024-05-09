@@ -20,7 +20,7 @@ type TargetPoolResp struct {
 	Targets map[string][]*config.ProberConfig
 }
 
-type PorberResultReq struct {
+type ProberResultReq struct {
 	// 探测类型
 	ProberType string
 

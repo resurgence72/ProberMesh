@@ -18,9 +18,11 @@ type proberJob struct {
 	sourceRegion string
 	targetRegion string
 
-	http config.HTTPProbe
-	r    *rpcCli
-	ch   chan *pb.PorberResultReq
+	http *config.HTTPProbe
+	icmp *config.ICMPProbe
+
+	r  *rpcCli
+	ch chan *pb.ProberResultReq
 }
 
 func (p *proberJob) run() {
@@ -80,7 +82,7 @@ func (p *proberJob) dispatch(ctx context.Context, pType string) {
 
 			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
 			if pType == util.ProbeICMPType {
-				p.ch <- probeICMP(ctx, target, p.sourceRegion, p.targetRegion)
+				p.ch <- probeICMP(ctx, target, p.icmp, p.sourceRegion, p.targetRegion)
 			} else {
 				p.ch <- probeHTTP(ctx, target, p.http, p.sourceRegion, p.targetRegion)
 			}

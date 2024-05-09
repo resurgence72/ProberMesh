@@ -17,7 +17,7 @@ import (
 )
 
 type Aggregator struct {
-	queue           [][]*pb.PorberResultReq
+	queue           [][]*pb.ProberResultReq
 	aggInterval     time.Duration
 	httpMetricsHold *cache.Cache // hold 点，过期reason自动删除
 	icmpMetricsHold *cache.Cache // 过期icmp region自动删除
@@ -91,7 +91,7 @@ func newAggregator(
 	})
 
 	aggregator = &Aggregator{
-		queue:           make([][]*pb.PorberResultReq, 0),
+		queue:           make([][]*pb.ProberResultReq, 0),
 		aggInterval:     interval,
 		cancel:          ctx,
 		httpMetricsHold: hmh,
@@ -100,7 +100,7 @@ func newAggregator(
 	return aggregator
 }
 
-func (a *Aggregator) Enqueue(reqs []*pb.PorberResultReq) {
+func (a *Aggregator) Enqueue(reqs []*pb.ProberResultReq) {
 	a.m.Lock()
 	defer a.m.Unlock()
 	a.queue = append(a.queue, reqs)
@@ -120,8 +120,8 @@ func (a *Aggregator) agg() {
 	var (
 		/*
 			icmpAggMap = {
-			"beijing->shanghai": []PorberResultReq
-			"shanghai->beijing": []PorberResultReq
+			"beijing->shanghai": []ProberResultReq
+			"shanghai->beijing": []ProberResultReq
 			}
 		*/
 		icmpAggMap = make(map[string]*aggProberResult)
@@ -215,8 +215,13 @@ func (a *Aggregator) agg() {
 		}
 	}
 
-	a.dotHTTP(httpAggMap)
-	a.dotICMP(icmpAggMap)
+	if len(httpAggMap) > 0 {
+		a.dotHTTP(httpAggMap)
+	}
+
+	if len(icmpAggMap) > 0 {
+		a.dotICMP(icmpAggMap)
+	}
 }
 
 func (a *Aggregator) dotHTTP(http map[string]*aggProberResult) {
@@ -333,5 +338,5 @@ func (a *Aggregator) setCache(c *cache.Cache, v any, ks ...string) {
 }
 
 func (a *Aggregator) reset() {
-	a.queue = make([][]*pb.PorberResultReq, 0)
+	a.queue = make([][]*pb.ProberResultReq, 0)
 }

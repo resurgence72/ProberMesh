@@ -31,7 +31,7 @@ func (s *Server) GetTargetPool(req pb.TargetPoolReq, resp *pb.TargetPoolResp) er
 }
 
 // agent 上报探测结果
-func (s *Server) ProberResultReport(reqs []*pb.PorberResultReq, resp *string) error {
+func (s *Server) ProberResultReport(reqs []*pb.ProberResultReq, resp *string) error {
 	aggregator.Enqueue(reqs)
 	return nil
 }

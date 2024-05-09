@@ -63,7 +63,7 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 	// 上报后再manager.start()
 	beforeReady := make(chan struct{})
 
-	ptsChan := make(chan *pb.PorberResultReq, 10)
+	ptsChan := make(chan *pb.ProberResultReq, 10)
 	{
 		// 定时拉取mesh poll
 		manager := NewTargetManager(

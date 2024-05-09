@@ -29,12 +29,12 @@ type byteCounter struct {
 	n int64
 }
 
-func probeHTTP(ctx context.Context, target string, httpProbe cfg.HTTPProbe, sourceRegion, targetRegion string) *pb.PorberResultReq {
+func probeHTTP(ctx context.Context, target string, httpProbe *cfg.HTTPProbe, sourceRegion, targetRegion string) *pb.ProberResultReq {
 	var (
 		redirects int
 		module    = httpProbe
 
-		defaultHTTPProberResultReq = &pb.PorberResultReq{
+		defaultHTTPProberResultReq = &pb.ProberResultReq{
 			ProberType:   util.ProbeHTTPType,
 			ProberTarget: target,
 			LocalIP:      agentIP,

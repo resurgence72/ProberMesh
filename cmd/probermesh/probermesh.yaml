@@ -23,6 +23,10 @@ prober_configs:
 
   - prober_type: icmp
     region: cn-hangzhou
+    icmp:
+      payload_size: 64
+      packet_count: 64
+      interval: 15ms
     targets:
       - 180.101.49.12
       - 8.8.8.8

@@ -20,7 +20,7 @@ type targetManager struct {
 	refreshInterval time.Duration
 	syncInterval    time.Duration
 	currents        map[string]struct{}
-	ptsChan         chan *pb.PorberResultReq
+	ptsChan         chan *pb.ProberResultReq
 	selfRegion      string
 	ctx             context.Context
 
@@ -41,7 +41,7 @@ func NewTargetManager(
 	sInterval time.Duration,
 	r *rpcCli,
 	br chan struct{},
-	ptsChan chan *pb.PorberResultReq,
+	ptsChan chan *pb.ProberResultReq,
 ) *targetManager {
 	tm = &targetManager{
 		targets:         make(map[string][]*config.ProberConfig),
@@ -83,14 +83,15 @@ func (t *targetManager) start() {
 }
 
 func (t *targetManager) prober() {
-	for region, tg := range t.targets {
+	for rgn, tg := range t.targets {
 		for _, tt := range tg {
 			pj := &proberJob{
 				proberType:   tt.ProberType,
 				targets:      tt.Targets,
 				http:         tt.HttpProbe,
+				icmp:         tt.ICMPProbe,
 				sourceRegion: t.selfRegion,
-				targetRegion: region,
+				targetRegion: rgn,
 				ch:           t.ptsChan,
 				r:            t.r,
 			}
@@ -100,7 +101,7 @@ func (t *targetManager) prober() {
 }
 
 func (t *targetManager) batchSend() {
-	var pts []*pb.PorberResultReq
+	var pts []*pb.ProberResultReq
 
 	go func() {
 		for pt := range t.ptsChan {
@@ -144,32 +145,9 @@ func (t *targetManager) getTargets() {
 			pc := pcs[i]
 			batch += len(pc.Targets)
 
-			compileProbeRegexp(&pc.HttpProbe)
 		}
 		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", r, batch)
 	}
 	logrus.Debugln("agent get current target list msg: ", msg)
 	t.targets = resp.Targets
-}
-
-func compileProbeRegexp(probe *config.HTTPProbe) {
-	for i := range probe.FailIfBodyMatchesRegexp {
-		regexp, _ := config.NewRegexp(probe.FailIfBodyMatchesRegexp[i].Original)
-		probe.FailIfBodyMatchesRegexp[i] = regexp
-	}
-
-	for i := range probe.FailIfBodyNotMatchesRegexp {
-		regexp, _ := config.NewRegexp(probe.FailIfBodyNotMatchesRegexp[i].Original)
-		probe.FailIfBodyNotMatchesRegexp[i] = regexp
-	}
-
-	for i := range probe.FailIfHeaderMatchesRegexp {
-		regexp, _ := config.NewRegexp(probe.FailIfHeaderMatchesRegexp[i].Regexp.Original)
-		probe.FailIfHeaderMatchesRegexp[i].Regexp = regexp
-	}
-
-	for i := range probe.FailIfHeaderNotMatchesRegexp {
-		regexp, _ := config.NewRegexp(probe.FailIfHeaderNotMatchesRegexp[i].Regexp.Original)
-		probe.FailIfHeaderNotMatchesRegexp[i].Regexp = regexp
-	}
 }

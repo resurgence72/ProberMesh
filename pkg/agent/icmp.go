@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"probermesh/pkg/config"
 	"probermesh/pkg/pb"
 	"probermesh/pkg/util"
 
@@ -14,14 +15,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ICMPProbe struct {
-	IPProtocol         string `yaml:"preferred_ip_protocol,omitempty"` // Defaults to "ip6".
-	IPProtocolFallback bool   `yaml:"ip_protocol_fallback,omitempty"`
-	SourceIPAddress    string `yaml:"source_ip_address,omitempty"`
-	PayloadSize        int    `yaml:"payload_size,omitempty"`
-	DontFragment       bool   `yaml:"dont_fragment,omitempty"`
-	TTL                int    `yaml:"ttl,omitempty"`
-}
+//type ICMPProbe struct {
+//	IPProtocol         string `yaml:"preferred_ip_protocol,omitempty"` // Defaults to "ip6".
+//	IPProtocolFallback bool   `yaml:"ip_protocol_fallback,omitempty"`
+//	SourceIPAddress    string `yaml:"source_ip_address,omitempty"`
+//	PayloadSize        int    `yaml:"payload_size,omitempty"`
+//	//DontFragment       bool   `yaml:"dont_fragment,omitempty"`
+//	TTL                int    `yaml:"ttl,omitempty"`
+//}
 
 func init() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -50,22 +51,22 @@ var (
 	defaultICMPFloodInterval = time.Duration(15) * time.Millisecond
 )
 
-func getICMPSequence() uint16 {
-	icmpSequenceMutex.Lock()
-	defer icmpSequenceMutex.Unlock()
-	icmpSequence++
-	return icmpSequence
-}
+//func getICMPSequence() uint16 {
+//	icmpSequenceMutex.Lock()
+//	defer icmpSequenceMutex.Unlock()
+//	icmpSequence++
+//	return icmpSequence
+//}
 
-func buildDefaultICMPProbe() ICMPProbe {
-	return ICMPProbe{
-		IPProtocolFallback: true,
-		TTL:                defaultICMPTTL,
-		IPProtocol:         "ip4",
-	}
-}
+//func buildDefaultICMPProbe() ICMPProbe {
+//	return ICMPProbe{
+//		IPProtocolFallback: true,
+//		TTL:                defaultICMPTTL,
+//		IPProtocol:         "ip4",
+//	}
+//}
 
-//func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
+//func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.ProberResultReq {
 //	var (
 //		requestType     icmp.Type
 //		replyType       icmp.Type
@@ -74,7 +75,7 @@ func buildDefaultICMPProbe() ICMPProbe {
 //		hopLimitFlagSet = true
 //		module = buildDefaultICMPProbe()
 //
-//		defaultICMPPorberResultReq = &pb.PorberResultReq{
+//		defaultICMPPorberResultReq = &pb.ProberResultReq{
 //			ProberType:    "icmp",
 //			ICMPFields: make(map[string]float64),
 //			SourceRegion:  sourceRegion,
@@ -376,9 +377,9 @@ func buildDefaultICMPProbe() ICMPProbe {
 //	}
 //}
 
-func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *pb.PorberResultReq {
+func probeICMP(_ context.Context, target string, icmpProbe *config.ICMPProbe, sourceRegion, targetRegion string) *pb.ProberResultReq {
 	var (
-		defaultICMPPorberResultReq = &pb.PorberResultReq{
+		defaultICMPProberResultReq = &pb.ProberResultReq{
 			ProberType:   util.ProbeICMPType,
 			ICMPFields:   make(map[string]float64),
 			SourceRegion: sourceRegion,
@@ -390,30 +391,32 @@ func probeICMP(ctx context.Context, target, sourceRegion, targetRegion string) *
 	)
 	defer pinger.Stop()
 
-	pinger.Interval = defaultICMPFloodInterval
+	pinger.Interval = icmpProbe.IntervalDur
 	pinger.RecordRtts = false
 	pinger.SetNetwork("ip")
-	pinger.Size = defaultICMPSize
-	pinger.Count = defaultICMPCount
+	pinger.Size = icmpProbe.PayloadSize
+	pinger.Count = icmpProbe.PacketCount
 	pinger.Timeout = proberTimeout
 	pinger.SetPrivileged(true)
 
 	nslookup := time.Now()
 	if err := pinger.Resolve(); err != nil {
 		logrus.Errorln("target resolve failed ", err)
-		return defaultICMPPorberResultReq
+		return defaultICMPProberResultReq
 	}
 
-	defaultICMPPorberResultReq.ICMPFields["resolve"] = time.Now().Sub(nslookup).Seconds()
+	defaultICMPProberResultReq.ICMPFields["resolve"] = time.Now().Sub(nslookup).Seconds()
 	pinger.OnFinish = func(stats *ping.Statistics) {
-		defaultICMPPorberResultReq.ProberSuccess = true
-		defaultICMPPorberResultReq.ICMPFields["loss"] = stats.PacketLoss
-		defaultICMPPorberResultReq.ICMPFields["rtt"] = stats.AvgRtt.Seconds()
-		defaultICMPPorberResultReq.ICMPFields["stddev"] = stats.StdDevRtt.Seconds()
+		defaultICMPProberResultReq.ProberSuccess = true
+		defaultICMPProberResultReq.ICMPFields["loss"] = stats.PacketLoss
+		defaultICMPProberResultReq.ICMPFields["rtt"] = stats.AvgRtt.Seconds()
+		defaultICMPProberResultReq.ICMPFields["min"] = stats.MinRtt.Seconds()
+		defaultICMPProberResultReq.ICMPFields["max"] = stats.MaxRtt.Seconds()
+		defaultICMPProberResultReq.ICMPFields["stddev"] = stats.StdDevRtt.Seconds()
 	}
 
 	if err := pinger.Run(); err != nil {
 		logrus.Errorln("ping run failed ", err)
 	}
-	return defaultICMPPorberResultReq
+	return defaultICMPProberResultReq
 }
