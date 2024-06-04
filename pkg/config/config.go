@@ -187,9 +187,7 @@ func (hp *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		h.IPProtocol = defaultHttpProbe.IPProtocol
 	}
 
-	if len(h.IPProtocol) == 0 {
-		h.IPProtocol = defaultHttpProbe.IPProtocol
-	}
+	*hp = *h
 	return nil
 }
 
