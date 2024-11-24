@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -10,11 +9,12 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 const (
 	defaultRegionEnv = "PROBER_REGION"
-	regionTimeout    = time.Duration(3) * time.Second
+	regionTimeout    = time.Second
 )
 
 const (
@@ -91,47 +91,84 @@ func getSelfRegion(dr string) string {
 
 	// 3. env没有 使用curl
 	var (
-		aliCloudRegion    = "http://100.100.100.200/latest/meta-data/region-id"
-		tencentRegion     = "http://metadata.tencentyun.com/latest/meta-data/placement/zone"
-		googleCloudRegion = "http://metadata.google.internal/computeMetadata/v1/instance/zone"
+		getAliCloudRegionCmd    = `curl -s http://100.100.100.200/latest/meta-data/region-id`
+		getTencentRegionCmd     = `curl -s http://metadata.tencentyun.com/latest/meta-data/placement/zone`
+		getGoogleCloudRegionCmd = `curl -s http://metadata.google.internal/computeMetadata/v1/instance/zone -H "Metadata-Flavor: Google"`
+		getHuaWeiCloudRegionCmd = `curl -s http://169.254.169.254/openstack/latest/meta_data.json`
+		getVolcEngineRegionCmd  = `curl -s http://100.96.0.96/latest/region_id`
+		getAWSRegionCmd         = `curl -s http://169.254.169.254/latest/meta-data/placement/region`
 	)
 
+	ctx, cancel := context.WithTimeout(context.Background(), regionTimeout)
+	defer cancel()
+
+	resultCn := make(chan string, 1)
 	f := func(r string) (string, error) {
-		ctx, _ := context.WithTimeout(context.TODO(), regionTimeout)
 		cmd := exec.CommandContext(
 			ctx,
 			"bash",
 			"-c",
-			fmt.Sprintf("curl -s %s", r),
+			r,
 		)
 
 		bs, err := cmd.CombinedOutput()
 		return string(bs), err
 	}
 
-	pipeLines := []func() (string, error){
-		func() (string, error) {
-			return f(aliCloudRegion)
+	pipeLines := []func(){
+		func() {
+			r, err := f(getAliCloudRegionCmd)
+			if err == nil && len(r) > 0 {
+				resultCn <- r
+			}
 		},
-		func() (string, error) {
-			return f(tencentRegion)
+		func() {
+			r, err := f(getTencentRegionCmd)
+			if err == nil && len(r) > 0 {
+				resultCn <- r
+			}
 		},
-		func() (string, error) {
-			r, err := f(googleCloudRegion)
+		func() {
+			r, err := f(getGoogleCloudRegionCmd)
 			if err == nil && len(r) > 0 {
 				ss := strings.Split(r, "/")
 				r = ss[len(ss)-1]
+				resultCn <- r
 			}
-			return region, err
+		},
+		func() {
+			r, err := f(getHuaWeiCloudRegionCmd)
+			if err == nil && len(r) > 0 {
+				parser := gjson.Parse(r)
+				if parser.IsObject() && parser.Get("availability_zone").Exists() {
+					resultCn <- parser.Get("availability_zone").String()
+				}
+			}
+		},
+		func() {
+			r, err := f(getVolcEngineRegionCmd)
+			if err == nil && len(r) > 0 {
+				resultCn <- r
+			}
+		},
+		func() {
+			r, err := f(getAWSRegionCmd)
+			if err == nil && len(r) > 0 {
+				resultCn <- r
+			}
 		},
 	}
 
-	for _, fn := range pipeLines {
-		if r, err := fn(); err == nil {
-			region = r
-			return r
-		}
+	for i := range pipeLines {
+		go pipeLines[i]()
 	}
-	// 4. curl不到，使用默认 cn-shanghai
+
+	select {
+	case region = <-resultCn:
+	case <-time.After(3 * regionTimeout):
+		logrus.Warnln("get region timeout, use default region: [cn-shanghai]")
+	}
+
+	close(resultCn)
 	return region
 }
