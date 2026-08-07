@@ -1,431 +1,258 @@
-# ProberMesh  一款分布式网格化拨测框架
+# ProberMesh — 分布式网格化拨测框架
 
-#### 1. 什么是网格化探测？
-```text
-网格化探测通常是指各region/zone两两探测，形成一张 mesh 网格，通常是icmp探测的高阶需求;
+ProberMesh 是一款 server/agent 二合一的分布式拨测框架，让各 region/zone 的节点两两探测，自动组成一张 **ICMP Mesh 网格**，同时支持 HTTP 多点拨测。同 region 部署多台 agent 互为冗余，结果聚合后更加稳定可靠。
 
+## 核心特性
 
-probermesh 项目的优势
-0. server/agent 二合一，单二进制部署；
-1. 支持内网/公网模式下 icmp 自动发现，agent 一键部署自动加入 mesh 网格,不需要借助 consul 等额外组件;
-2. 支持同 region 下的容错性；这块很重要，同 region 下可以部署多 agent,防止由于单台 agent 网络问题造成的探测失败 -> 告警噪音；
-   server会对同region下结果agg；同region下agent越多，数据越准确，越稳定，容错率越高；
-3. 原生支持 prometheus, server 暴露openMetric数据供 prometheus 拉取;
-4. 支持 icmp/http 两种探测形式，icmp mesh 和 http 多点探测 可共存;
-5. 丰富的 metric 暴露，可结合 region 做灵活的自定义dashboard和告警策略;
-6. agent 支持自升级，运维极简;
-7. 集成任务下发功能，网络调试神器；
+- **二合一部署**：单二进制同时支持 server / agent 两种模式
+- **ICMP 自动发现**：agent 一键部署即自动加入网格，无需 consul 等额外组件
+- **内网/公网双模式**：自动发现支持内网 IP 与公网出口 IP 两种维度
+- **容错聚合**：同 region 多 agent 结果聚合，规避单点网络抖动造成的告警噪音
+- **双协议支持**：ICMP 网格 + HTTP 多点拨测可共存，HTTP 配置对齐 blackbox_exporter
+- **分阶段耗时**：HTTP 支持 resolve/connect/tls/processing/transfer 五阶段；ICMP 支持 resolve/rtt/min/max 及丢包率、抖动标准差
+- **Prometheus 原生指标**：server 暴露 OpenMetrics 供 Prometheus 直接抓取
+- **运维能力**：agent 自升级、任务下发（网络调试利器）、Grafana 面板即导即用
+
+## 架构总览
+
+```mermaid
+flowchart TB
+    subgraph Agents["Agent 集群（按 region 分组，每 region 可多台）"]
+        A1["HealthCheck<br/>每10s上报 region/ip/version"]
+        A2["TargetSync<br/>每1m拉取探测目标"]
+        A3["Prober<br/>ICMP / HTTP 探测"]
+        A4["TaskRunner<br/>执行下发命令"]
+        A5["Upgrade<br/>自升级检查"]
+    end
+
+    subgraph Server["Server（单节点即可）"]
+        S1["RPC Server :6000<br/>agent 接入/上报/拉取"]
+        S2["TargetsPool<br/>目标池(配置+动态发现)"]
+        S3["HealthDot<br/>agent 存活维护"]
+        S4["Aggregator<br/>同region结果聚合(15s)"]
+        S5["TaskManager<br/>任务下发/结果落盘"]
+        S6["HTTP Server :6001<br/>/metrics 与运维接口"]
+    end
+
+    subgraph Monitor["监控体系"]
+        P1["Prometheus"]
+        G1["Grafana"]
+    end
+
+    A1 <-->|gob RPC| S1
+    A2 <-->|gob RPC| S1
+    A3 -.->|gob RPC| S1
+    A4 <-->|gob RPC| S1
+    A5 <-->|gob RPC| S1
+    S1 --> S2
+    S1 --> S3
+    S1 --> S4
+    S1 --> S5
+    S6 --> P1 --> G1
 ```
 
+## 数据链路
 
+```mermaid
+sequenceDiagram
+    participant A as Agent
+    participant S as Server
+    participant P as Prometheus
 
-#### 2. region 概念说明
+    loop 每 10s
+        A->>S: Report(region, ip, version) 健康上报
+        S->>S: 刷新 agent 存活状态
+    end
 
-> ```
-> ICMP 视野落在 Region to Region ；
-> HTTP 视野落在 Region to URL ；
-> 
-> 同 Region 下拨测结果做 agg；
-> 
-> Region 是此项目的核心概念，极其灵活，意义可以自定义。例如(K8s/host环境 prod/test环境 ali/gcp厂商 等)
-> ICMP 默认会拨测 非 自身region的所有region；如果需要拨测自身，需要在 server 端指定 -server.probe.self 参数
-> 
-> 支持 ICMP/HTTP 分阶段耗时:
-> 	HTTP 支持 resolve/connect/tls/processing/transfer 五阶段耗时 (对标blackbox_exporter)
-> 	ICMP 支持 resolve/rtt 分阶段耗时; 支持丢包率， 抖动标准差 等丰富指标
-> ```
+    loop 每 1m
+        A->>S: GetTargetPool(region)
+        S-->>A: 下发探测目标(自动过滤同region)
+    end
 
-####  
+    loop 每 15s
+        A->>A: ICMP / HTTP 探测
+        A->>S: ProberResultReport 批量上报
+        S->>S: Aggregator 按 region 聚合(15s)
+    end
 
-#### 3. 支持的指标
-
-```text
-# ping 指标
-prober_icmp_failed   # icmp当前拨测失败数  gauge
-prober_icmp_duration_seconds  # icmp拨测分阶段耗时 gauge
-prober_icmp_packet_loss_rate  # icmp拨测丢包率 gauge
-prober_icmp_jitter_stddev_seconds  # icmp拨测标准差 gauge
-prober_icmp_duration_seconds_total # icmp拨测耗时分布 histogram
-
-# http 指标
-prober_http_failed  # http当前拨测失败数 gauge
-prober_http_duration_seconds  # http拨测分阶段耗时 gauge
-prober_http_ssl_earliest_cert_expiry  # tls指标
-prober_http_status_code # 响应码
-
-# 健康检查
-prober_agent_is_alive  # agent存活情况 gauge
-
-# 通用
-prober_server_receive_points  # server收到的上报点数 counter
-
-# 管理
-prober_server_task_enabled  # 标识是否开启任务下发功能
-prober_server_probe_self_enabled  # 标识agent是否允许同region拨测；默认为0,即agent只会拿到非自身region的拨测列表
+    P->>S: GET /metrics
+    S-->>P: prober_* 指标
 ```
 
+## 快速开始
 
+### 场景一：公网 ICMP 网格化拨测
 
-#### 4. 运维指南
+```bash
+# server 端（dynamic 模式自动发现）
+./probermesh -mode server \
+  -server.icmp.discovery=dynamic \          # 默认即 dynamic
+  -server.rpc.listen.addr=1.1.1.1:6000 \
+  -server.http.listen.addr=1.1.1.1:6001
 
-```shell
-# 项目构建
-cd ProberMesh/cmd/probermesh && go build -o probermesh .
+# agent 端（各 region 部署，上报公网出口 IP）
+./probermesh -mode agent \
+  -agent.region=ali-cn-shanghai \
+  -agent.icmp.network-type=public \         # 公网模式
+  -agent.rpc.report.addr=1.1.1.1:6000
+```
 
-# 项目运行
-./probermesh -h
-Usage of ./probermesh:
-    # 通用参数
-    -mode string
-        服务模式(agent/server) (default "server")
-    -v    版本信息
-    -h    帮助信息
-    
-    -log.dir string
-      日志目录 (default "/logs/")
-    -log.level int
-        日志级别;
-        PanicLevel 0
-        FatalLevel 1
-        ErrorLevel 2
-        WarnLevel  3
-        InfoLevel  4
-        DebugLevel 5
-        TraceLevel 6
-         (default 3)
-    
-    # agent 端参数
-    -agent.icmp.network-type string
-        agent ICMP探测agent自身上报IP类型;
-        intranet: agent上报内网IP地址，用与构建内网维度icmp网格；
-        public: agent上报公网IP地址，用于构建公网维度下icmp网格；
-         (default "intranet")
-    -agent.probe.interval string
-        agent端探测周期 (default "15s")
-    -agent.region string
-        agent端所属region/zone;不指定默认自动获取regionID (default "icmp-china-shanghai")
-    -agent.sync.interval string
-        agent端同步targets周期 (default "1m")
-    -agent.upgrade
-        agent端是否开启自升级功能,默认关闭
-    -agent.upgrade.interval string
-        agent端检查upgrade周期; 仅在指定 -agent.upgrade 后生效 (default "1m")
-    -agent.rpc.report.addr string
-        server端RPC地址 (default "localhost:6000")
-    
-    
-    # server 端参数
-    -server.aggregation.interval string
-        server聚合周期 (default "15s")
-    -server.http.listen.addr string
-        serverHTTP监听地址 (default "localhost:6001")
-    -server.rpc.listen.addr string
-        serverRPC监听地址 (default "localhost:6000")
-    -server.icmp.discovery string
-        server端ICMP探测目标获取模式(static/dynamic);
-        static:  各region下icmp探测地址按照配置文件为准;
-        dynamic: 各region下icmp探测地址按照agent自上报服务发现为准，且会覆盖掉配置中同region下原icmp列表;
-         (default "dynamic")
-    -server.probe.file string
-        server端探测列表文件路径
-    -server.series.cache.ratio int
-        server指标缓存时长重置倍率 (default 5)
-    -server.task
-        server是否开启task任务下发功能
-    -server.task.meta.dir string
-        server持久化task结果源目录 (default "./task_meta/")
-    -server.probe.self
-        server控制agent是否允许同region拨测
-   
-  
+### 场景二：内网 ICMP 网格化拨测
 
-# 探测列表文件(可选) -server.probe.file 参数所指定的配置
-cat probermesh.yaml
+```bash
+# server 端与场景一相同
+./probermesh -mode server -server.icmp.discovery=dynamic
+
+# agent 端仅将 network-type 改为 intranet（默认值）
+./probermesh -mode agent \
+  -agent.region=ali-cn-shanghai \
+  -agent.rpc.report.addr=1.1.1.1:6000
+```
+
+### 场景三：静态配置拨测（HTTP / 指定 ICMP 目标）
+
+```bash
+# server 端 static 模式，必须指定配置文件
+./probermesh -mode server \
+  -server.icmp.discovery=static \
+  -server.probe.file=./probermesh.yaml
+
+# agent 端无需 region 限定（按 server 下发配置拨测）
+./probermesh -mode agent -agent.rpc.report.addr=1.1.1.1:6000
+```
+
+> ICMP 默认不拨测自身 region，如需同 region 互测，server 加 `-server.probe.self`；
+> ICMP 探测需要 agent 进程具备 root 权限。
+
+## 配置参考
+
+### 启动参数
+
+| 分类 | 参数 | 默认值 | 说明 |
+|------|------|--------|------|
+| 通用 | `-mode` | `server` | 服务模式 agent/server |
+| 通用 | `-log.dir` | `/logs/` | 日志目录（自动按天切割，保留7天） |
+| 通用 | `-log.level` | `3` | 日志级别 0-6（Panic..Trace） |
+| server | `-server.rpc.listen.addr` | `localhost:6000` | RPC 监听地址 |
+| server | `-server.http.listen.addr` | `localhost:6001` | HTTP/指标监听地址 |
+| server | `-server.probe.file` | 空 | 探测配置文件路径（static 模式必填） |
+| server | `-server.icmp.discovery` | `dynamic` | icmp 目标发现模式：static=按配置 / dynamic=按 agent 上报自动发现（会覆盖同 region 配置的 icmp 目标） |
+| server | `-server.aggregation.interval` | `15s` | 结果聚合周期 |
+| server | `-server.series.cache.ratio` | `5` | 指标缓存时长重置倍率（过期 series 自动清理） |
+| server | `-server.task` | `false` | 开启任务下发功能 |
+| server | `-server.task.meta.dir` | `./task_meta/` | 任务结果落盘目录 |
+| server | `-server.probe.self` | `false` | 允许 agent 拨测自身 region |
+| agent | `-agent.rpc.report.addr` | `localhost:6000` | server RPC 地址 |
+| agent | `-agent.region` | 自动获取 | 所属 region，优先级见下方说明 |
+| agent | `-agent.probe.interval` | `15s` | 探测周期 |
+| agent | `-agent.sync.interval` | `1m` | 拉取探测目标周期 |
+| agent | `-agent.icmp.network-type` | `intranet` | 上报 IP 类型：intranet=内网 / public=公网 |
+| agent | `-agent.upgrade` | `false` | 开启自升级 |
+| agent | `-agent.upgrade.interval` | `1m` | 升级检查周期 |
+
+**agent region 获取优先级**：`-agent.region` 参数 > 环境变量 `PROBER_REGION` > 自动探测云厂商 metadata（阿里云 / 腾讯云 / 谷歌云 / 华为云 / 火山引擎 / AWS） > 默认 `cn-shanghai`
+
+### 探测配置文件（`-server.probe.file`）
+
+```yaml
 prober_configs:
+  # HTTP 多点拨测（配置段对齐 blackbox_exporter）
   - prober_type: http
     region: project-01
-    http:                     # http配置端对标 blackbox_exporter，原生适配其http配置段
-      valid_status_codes:
-        - 200
-        - 201
+    http:
+      valid_status_codes: [200, 201]
       method: GET
       headers:
-        Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8
+        Accept: text/html,application/xhtml+xml
       fail_if_body_matches_regexp: text.*
     targets:
       - http://www.baidu.com
-      - http://www.taobao.com
-      - www.ladjflajfl.ccc
-  - prober_type: http
-    region: cn-chengdu
-    targets:
-      - www.baidu.com
       - www.taobao.com
+
+  # ICMP 拨测（可选配置包数/包大小/发包间隔）
   - prober_type: icmp
     region: cn-hangzhou
+    icmp:
+      packet_count: 64        # 包数
+      payload_size: 64        # 包大小（字节）
+      interval: 15ms          # 发包间隔
     targets:
       - 180.101.49.12
       - 8.8.8.8
-  - prober_type: icmp
-    region: cn-shanghai
-    targets:
-      - 8.8.8.8
-
-
-
-PS: region参数优先级
-1. 命令行 -agent.region
-2. 环境变量 PROBER_REGION
-3. 代码curl云厂商region接口(仅支持aliyun)
-4. 使用默认region cn-shanghai
-
-其余参数可根据需要自定义调整
-
-
-PS: -server.icmp.discovery 参数支持两种icmp发现模式
-1. static静态发现:  icmp探测地址从静态配置文件中获取，需指定 -server.probe.file 参数配合使用，否则无icmp和http数据，启动没意义；
-2. dynamic动态发现: icmp探测地址由agent动态上报，并且agent 每1m (-agent.sync.interval) 向server同步一次，可自动生成一张icmp Mesh 网格；
-
-http仅支持通过配置文件指定，不支持自动发现模式
 ```
 
+## 指标一览
 
+| 指标 | 类型 | 说明 |
+|------|------|------|
+| `prober_icmp_failed` | gauge | icmp 当前失败数 |
+| `prober_icmp_duration_seconds` | gauge | icmp 分阶段耗时（phase: resolve/rtt/min/max） |
+| `prober_icmp_packet_loss_rate` | gauge | icmp 丢包率 |
+| `prober_icmp_jitter_stddev_seconds` | gauge | icmp 抖动标准差 |
+| `prober_icmp_duration_seconds_total` | histogram | icmp 耗时分布 |
+| `prober_http_failed` | gauge | http 当前失败数（含失败原因 label） |
+| `prober_http_duration_seconds` | gauge | http 分阶段耗时（phase: resolve/connect/tls/processing/transfer） |
+| `prober_http_ssl_earliest_cert_expiry` | gauge | https 证书最早过期时间 |
+| `prober_http_status_code` | gauge | http 响应码 |
+| `prober_agent_is_alive` | gauge | agent 存活状态 |
+| `prober_server_receive_points` | counter | server 接收上报点数 |
+| `prober_server_task_enabled` | gauge | 任务下发功能开关 |
+| `prober_server_probe_self_enabled` | gauge | 同 region 拨测开关 |
 
-#### 5. 效果展示
+Prometheus 抓取配置：
 
-##### 1. ICMP 面板效果
-直接导入 ./build/grafana/probermesh-icmp.json 至 Grafana 即可使用
-
-> ICMP 拨测网格
-
-
-##### 2. HTTP 面板效果
-
-> HTTP 拨测
-
-
-
-#### 6. ProberMesh最佳实践
-
-```shell
-ICMP网格化拨测需求下:
-- 内网互通环境下，使用
-	1. server动态模式 -server.icmp.discovery=dynamic;
-    2. agent内网模式 -agent.icmp.netowrk-type=intranet 拿到内网ip，以内网作为ip池上报server;
-    
-- 公网互通环境下，使用
-	1. server动态模式 -server.icmp.discovery=dynamic;
-    2. agent公网模式 -agent.icmp.netowrk-type=public 拿到实例出口公网ip，以公网作为ip池上报server;
-
-其余需求下(自定义模式):
-使用
-	1. server静态模式 -server.icmp.discovery=static
-    2. server指定配置文件 -server.probe.file=./probermesh.yaml 自定义互(ping/http)对象；所有agent根据server下发的配置文件做拨测；
-
-
-
-
-
-具体场景case:
-########### 场景一: 公网icmp拨测网格化 ###########
-# server 端使用
-./probermesh \
--mode server \
--server.rpc.listen.addr=1.1.1.1:6000 \
--server.http.listen.addr=1.1.1.1:6001 \
--server.aggregation.interval=15s \
--server.icmp.discovery=dynamic   # 1. 设置为动态模式
-
-# agent 端使用
-./probermesh \
--mode agent \
--agent.region=ali-cn-shanghai \
--agent.probe.interval=15s \
--agent.sync.interval=1m \
--agent.icmp.network-type=public \   # 2. 设置为公网模式
--agent.rpc.report.addr=1.1.1.1:6000
-
-
-
-########### 场景二: 内网互通icmp拨测网格化 ###########
-# server 端使用
-./probermesh \
--mode server \
--server.rpc.listen.addr=1.1.1.1:6000 \
--server.http.listen.addr=1.1.1.1:6001 \
--server.aggregation.interval=15s \
--server.icmp.discovery=dynamic  # 1. 设置为动态模式
-
-# agent 端使用
-./probermesh \
--mode agent \
--agent.region=ali-cn-shanghai \
--agent.probe.interval=15s \
--agent.sync.interval=1m \
--agent.icmp.network-type=intranet \  # 2. 设置为内网模式
--agent.rpc.report.addr=1.1.1.1:6000
-
-
-
-
-########### 场景三: 非网格化icmp拨测（一对多或n对多） / 通用http拨测 ###########
-# server 端使用
-./probermesh \
--mode server \
--server.rpc.listen.addr=1.1.1.1:6000 \
--server.http.listen.addr=1.1.1.1:6001 \
--server.aggregation.interval=15s \
--server.icmp.discovery=static \   # 1. 设置为静态模式
--server.probe.file=./probemesh.yaml  # 2. 指定探测配置文件
-
-# agent 端使用
-./probermesh \
--mode agent \
--agent.region=ali-cn-shanghai \
--agent.probe.interval=15s \
--agent.sync.interval=1m \
--agent.rpc.report.addr=1.1.1.1:6000
-
-
-
-###################
-注意: 
-脚本 script/probermesh_agent_deploy.sh 提供基于 supervisor 托管的公网网格拨测（场景一）agent一键部署功能；
-场景二/三需要根据相应配置调整脚本中agent启动参数；
-
-脚本使用方式:  sh probermesh_agent_deploy.sh ali-cn-shanghai
-脚本后需要跟一个agent的region信息，对标 -agent.region
-
-server端建议基于 supervisor 手动配置，因为配置较灵活且只需要一个节点，脚本主要解决agent的快速部署；
-```
-
-
-
-
-
-#### 7. Prometheus 采集 ProberMesh 的指标
-
-```shell script
+```yaml
 scrape_configs:
   - job_name: "probermesh"
     scrape_interval: 15s
     static_configs:
-      - targets: ["$server.http.listen.addr"]
-    metric_relabel_configs:
-      - source_labels: ["__name__"]
-        regex: "^prober.*"
-        action: 'keep'
+      - targets: ["<server-ip>:6001"]
 ```
 
+Grafana 面板可直接导入 `build/grafana/probermesh-icmp.json`（ICMP 网格）与 `build/grafana/probermesh-http.json`（HTTP 拨测）。
 
+## 高级功能
 
+### 任务下发（网络调试）
 
+在拨测异常时，可向目标 region 的 agent 下发 `mtr` 等排查命令：
 
-### 高级功能 （可通过 probermesh-cli 工具操作）
-
-
-
-#### 1. Server 端下发任务
-
-##### 1. 需求及使用
-
-```text
-例如 我们在拨测不通的情况下可能会借助三方工具，例如 route, 例如 mtr 去进一步定位问题；基于这种场景，probermesh 集成了简单的任务下发系统；
-若要使用功能，需要在 server 启动参数中指定 -server.task 来开启功能;
-
-下发流程： 管理机向 server 端 http://${server_http_addr}/-/task 发送 POST 任务下发请求
-{
+```bash
+# server 需开启 -server.task；管理机 POST 下发
+curl -X POST http://<server-ip>:6001/-/task -d '{
     "region": "欧洲-美国-*",
     "expr": "=~",
-    "cmd": "mtr -r www.baidu.com -c 20 -i0.1",
-}
-region 用来匹配合规的agent, 支持正则匹配；例如，我们只想让欧洲的节点执行命令，那么需要指定 region 为 "欧洲*" 或 "欧洲.+" 等；
-expr 标识匹配的操作符，当前支持四种,分别是 "=" 匹配 / "!=" 不匹配 / "=~" 正则匹配 / "!~" 正则不匹配； 通过 region + expr 极其灵活的去下发任务；
-cmd 需要执行的命令，不需要再加 bash -c , 直接写原命令即可。
-
-agent端执行并上报后，可以在 server 端的 ./task_meta 目录下找到所有上报的任务； 具体目录可通过 -server.task.meta.dir 更改；
-```
-```text
-# task_meta 目录
-[root@test task_meta]# ll
-total 4
--rw-r--r-- 1 root root 1417 Feb  8 16:12 美国-弗吉尼亚_xx.xx.xx.xx_2023-02-08_16-12-27
-[root@test task_meta]# cat 美国-弗吉尼亚_xx.xx.xx.xx_2023-02-08_16-12-27 
-commond:
-mtr -r www.baidu.com -c 10 -i0.1 
-
-output:
-Loaded plugins: fastestmirror
-Loading mirror speeds from cached hostfile
-Package 2:mtr-0.85-7.el7.x86_64 already installed and latest version
-Nothing to do
-Start: Wed Feb  8 16:12:21 2023
-HOST: test- Loss%   Snt   Last   Avg  Best  Wrst StDev
-  1.|-- xx.xx.xx.x                 0.0%    10    0.5   0.4   0.3   0.5   0.0
-  2.|-- xx.xx.xx.x                 0.0%    10    2.2   2.2   2.0   2.4   0.0
-  3.|-- xx.xx.xx.x             30.0%    10    0.7   1.4   0.5   4.4   1.4
-  4.|-- xx.xx.xx.x            90.0%    10    0.9   0.9   0.9   0.9   0.0
-  5.|-- ae72.edge5.washington12.l 50.0%    10    8.5   7.1   1.2  21.2   8.3
-  6.|-- 63.243.136.12              0.0%    10    4.6   1.9   1.5   4.6   0.9
-  7.|-- if-ae-55-2.tcore3.aeq-ash 40.0%    10   71.3  71.3  71.0  71.8   0.0
-  8.|-- if-ae-36-2.tcore2.lvw-los 50.0%    10   69.1  70.2  69.1  73.8   1.9
-  9.|-- if-ae-2-2.tcore1.lvw-losa 40.0%    10   71.1  71.6  71.1  72.9   0.4
- 10.|-- if-ae-60-2.tcore1.sv1-san 30.0%    10   71.3  71.8  71.1  73.3   0.6
- 11.|-- if-ae-0-2.tcore2.sv1-sant  0.0%    10   68.8  69.2  68.8  70.7   0.3
- 12.|-- xx.xx.xx.x               0.0%    10   68.9  68.8  68.7  69.0   0.0
- 13.|-- xx.xx.xx.x              0.0%     9   69.9  70.1  69.6  72.1   0.6
- 14.|-- xx.xx.xx.x             0.0%     9   68.3  68.3  68.3  68.3   0.0
+    "cmd": "mtr -r www.baidu.com -c 20 -i 0.1"
+}'
 ```
 
+- `region`：匹配 agent 的 region，支持正则
+- `expr`：`=` 匹配 / `!=` 不匹配 / `=~` 正则匹配 / `!~` 正则不匹配
+- 执行结果由 agent 上报并落盘到 server 的 `-server.task.meta.dir` 目录
 
+### Agent 自升级
 
-#### 2. Agent 节点自升级
-
-##### 1. 需求及实现
-
-```text
-probermesh 部署后存在一种场景，我们需要对 agent 进行升级或bug fix；这在 C/S agent 二进制场景中是一种常见需求;
-通用的批量升级方式无非如下几种
-1. 手动替换二进制 restart
-   弊端：操作繁琐,节点多了后需要耗费大量时间
-2. ansible 自动化批量执行
-   弊端: 节点多了后ssh执行效率很低
-3. 基于 kubernetes 环境做 Deployment/DaemonSet replace
-   弊端: probermesh 大部分场景是部署在同内网的多region, 或不同region通过公网通讯；使用k8s托管成本太高
-4. self upgrade节点自升级
-   弊端: 代码层面适配，大规模节点下升级有可能把管理机带宽打满(probermesh主要多对多拨测，节点数量不会很大，打满问题不太会发生)
-5. ...
-
-
-
-当前使用4实现自升级，这种实现方式有两个前提: 
-1. agent 节点需要使用守护进程托管，例如 supervisord; 
-2. agent 需要指定 -agent.upgrade 参数;
-
-
-
-升级流程： 管理机向 server 端 http://${server_http_addr}/-/upgrade 发送 POST 升级请求：
-{
+```bash
+# server 下发升级指令
+curl -X POST http://<server-ip>:6001/-/upgrade -d '{
     "downloadURL": "http://172.18.12.38:9999/probermesh",
     "md5Check": "0a85983226d91029bcf5701f94d18753",
-    "version": "0.0.1",
-    "force": false,
-}
-downloadURL： 标识agent新版本二进制的下载地址，这里要注意，二进制名称要和原启动命令二进制名称一致，否则守护进程会restart失败;
-md5Check： 标识agent新版本的md5，agent需要和下载的二进制做md5校验，校验成功才会替换升级;
-version： 标识新版本的version;
-force： 标识是否强制升级，这里存在两种情况
-    - false 情况下，正常升级，agent会进行 version check 看需要升级的版本否比当前版本高，如果符合条件，agent会进行调谐重启升级，直至成功升级到高版本为止；
-    - true 情况下，强制升级，agent跳过version check,支持任意版本号，agent拿到升级信息后只会升级一次(无论成功或失败，原因是防止强制升级失败导致无限制升级重启，导致服务不可用)
+    "version": "0.0.9",
+    "force": false
+}'
 ```
 
-##### 2. 题外话：自升级可能存在的问题
-```text
-agent升级是全量升级，如何做灰度或做并发控制？ 这种需求通常存在于 agent 节点规模很大的场景；
-1. 需要一批批替换，例如两万个agent, 500台500台的升级；
-2. 管理机需要限制带宽，防止带宽被打满；
+前提：agent 开启 `-agent.upgrade`，且由守护进程托管（supervisord / systemd）。`force=false` 时按版本号正常升级；`force=true` 时强制升级且只执行一次，防止失败无限重启。
 
+## 部署与运维
 
-probermesh不同于监控等agent,需要每台机器都部署，一般会在每个region选取多台做agent，正常场景下就足够了。
-如果后续真有类似的大规模部署拨测需求，这里提供一个简单的思路，后续有需求时再实现：可以通过分布式锁hold agent upgrade count
-```
+| 方式 | 说明 |
+|------|------|
+| 源码构建 | `make build`（linux amd64，含 upx 压缩）或 `cd cmd/probermesh && go build -o probermesh .` |
+| 容器 | `docker build -t probermesh .`（`Dockerfile`） |
+| K8s | `build/kubernetes/` 提供 server Deployment 与 agent DaemonSet |
+| systemd | `build/service/` 提供 server/agent 单元文件 |
+| agent 批量部署 | `sh script/probermesh_agent_deploy.sh <region>`（基于 supervisor 托管，按需调整脚本内启动参数） |
+
+> 场景选择小结：内网/公网互通环境下做 ICMP 网格 → dynamic 模式 + 对应 `network-type`；
+> 自定义拨测对象（HTTP / 指定 IP）→ static 模式 + 配置文件，所有 agent 按 server 下发配置探测。
