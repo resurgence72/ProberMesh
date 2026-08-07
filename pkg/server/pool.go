@@ -95,9 +95,10 @@ func (t *targetsPool) updatePool() {
 	// 每分钟更新次pool值(根据agent上报)
 	util.Wait(t.done, time.Duration(1)*time.Minute, func() {
 		var updateKey = util.ProbeICMPType
-		for region, ipm := range getDiscoverPool() {
+		for region, ipm := range getDiscoverPoolSnapshot() {
 			if len(ipm) == 0 {
 				// 当前region agent下线,则删除当前region下的icmp，防止后续继续同步
+				t.m.Lock()
 				if pm, ok := t.pool[region]; ok {
 					if len(pm) > 0 {
 						delete(t.pool[region], updateKey)
@@ -106,6 +107,7 @@ func (t *targetsPool) updatePool() {
 						delete(t.pool, region)
 					}
 				}
+				t.m.Unlock()
 				continue
 			}
 
@@ -118,15 +120,18 @@ func (t *targetsPool) updatePool() {
 				ProberType: updateKey,
 				Region:     region,
 				Targets:    ips,
+				ICMPProbe:  config.DefaultICMPProbe(),
 			}
 
 			// 如果使用自动发现方式，则会覆盖掉配置中指定的同region下的icmp targets节点
 			// 全部使用agent上报的ip进行探测
+			t.m.Lock()
 			if pm, ok := t.pool[region]; ok {
 				pm[updateKey] = updatePC
 			} else {
 				t.pool[region] = map[string]*config.ProberConfig{updateKey: updatePC}
 			}
+			t.m.Unlock()
 		}
 
 		if first {
@@ -137,6 +142,9 @@ func (t *targetsPool) updatePool() {
 }
 
 func (t *targetsPool) getPool(sourceRegion string) map[string][]*config.ProberConfig {
+	t.m.Lock()
+	defer t.m.Unlock()
+
 	pcs := make(map[string][]*config.ProberConfig)
 	for region, pcm := range t.pool {
 		// 不允许拨测自身 且 目的region和自身region相同时，跳过
@@ -153,6 +161,9 @@ func (t *targetsPool) getPool(sourceRegion string) map[string][]*config.ProberCo
 }
 
 func (t *targetsPool) getTargets() interface{} {
+	t.m.Lock()
+	defer t.m.Unlock()
+
 	type targetGroup struct {
 		ProberType string   `json:"prober_type"`
 		Targets    []string `json:"targets"`

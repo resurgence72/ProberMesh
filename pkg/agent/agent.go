@@ -79,8 +79,9 @@ func BuildAgentMode(ao *ProberMeshAgentOption) {
 			manager.start()
 			return nil
 		}, func(err error) {
+			// 不能close(ptsChan)：探测goroutine可能正在阻塞发送，向已关闭channel发送会panic；
+			// 发送方通过select-send + ctx.Done安全退出
 			cancelAll()
-			close(ptsChan)
 		})
 	}
 

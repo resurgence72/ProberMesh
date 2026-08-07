@@ -1,0 +1,15 @@
+# IntelliJ project files
+.idea/
+*.iml
+out
+gen
+
+# opencode
+.opencode
+
+# codegraph
+.codegraph
+
+main
+
+probermesh

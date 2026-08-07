@@ -23,10 +23,14 @@ type proberJob struct {
 
 	r  *rpcCli
 	ch chan *pb.ProberResultReq
+
+	ctx context.Context
 }
 
 func (p *proberJob) run() {
-	ctx, _ := context.WithTimeout(context.TODO(), proberTimeout)
+	ctx, cancel := context.WithTimeout(p.ctx, proberTimeout)
+	defer cancel()
+
 	pt := util.ProbeICMPType
 
 	if p.proberType == util.ProbeHTTPType {
@@ -35,60 +39,48 @@ func (p *proberJob) run() {
 	p.dispatch(ctx, pt)
 }
 
-func (p *proberJob) jobExist(
-	proberType string,
-	sourceRegion string,
-	targetRegion string,
-	proberTarget string,
-) bool {
-	key := util.JoinKey(
-		proberType,
-		sourceRegion,
-		targetRegion,
-		proberTarget,
-	)
-
-	tm.m.Lock()
-	defer tm.m.Unlock()
-	if tm.currents == nil {
-		tm.currents = make(map[string]struct{})
+// send 安全发送探测结果：context取消或channel无法写入时立即返回，不阻塞
+func (p *proberJob) send(ctx context.Context, res *pb.ProberResultReq) {
+	select {
+	case p.ch <- res:
+	case <-ctx.Done():
 	}
-
-	if _, ok := tm.currents[key]; ok {
-		return true
-	}
-	tm.currents[key] = struct{}{}
-	return false
 }
 
 func (p *proberJob) dispatch(ctx context.Context, pType string) {
+	// 防止重复地址探测（job内本地去重）
+	seen := make(map[string]struct{})
+	var targets []string
+	for _, target := range p.targets {
+		key := util.JoinKey(
+			pType,
+			p.sourceRegion,
+			p.targetRegion,
+			target,
+		)
+		if _, ok := seen[key]; ok {
+			logrus.Warnln("target deduplication ", pType, p.sourceRegion, p.targetRegion, target)
+			continue
+		}
+		seen[key] = struct{}{}
+		targets = append(targets, target)
+	}
+
 	var wg sync.WaitGroup
 
-	for _, target := range p.targets {
+	for _, target := range targets {
 		wg.Add(1)
 		go func(target string) {
 			defer wg.Done()
 
-			// 防止重复地址探测
-			if p.jobExist(
-				pType,
-				p.sourceRegion,
-				p.targetRegion,
-				target,
-			) {
-				logrus.Warnln("target deduplication ", pType, p.sourceRegion, p.targetRegion, target)
-				return
-			}
-
 			<-time.After(time.Duration(util.SetJitter()) * time.Millisecond)
 			if pType == util.ProbeICMPType {
-				p.ch <- probeICMP(ctx, target, p.icmp, p.sourceRegion, p.targetRegion)
+				p.send(ctx, probeICMP(ctx, target, p.icmp, p.sourceRegion, p.targetRegion))
 			} else {
-				p.ch <- probeHTTP(ctx, target, p.http, p.sourceRegion, p.targetRegion)
+				p.send(ctx, probeHTTP(ctx, target, p.http, p.sourceRegion, p.targetRegion))
 			}
 		}(target)
 	}
 
 	wg.Wait()
-	tm.currents = nil
 }

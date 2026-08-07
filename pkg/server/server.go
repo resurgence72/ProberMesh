@@ -152,7 +152,7 @@ func BuildServerMode(so *ProberMeshServerOption) {
 		mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
 			ch := make(chan error)
 			reloadCh <- ch
-			if err = <-ch; err != nil {
+			if err := <-ch; err != nil {
 				_, _ = w.Write([]byte(err.Error()))
 			} else {
 				_, _ = w.Write([]byte("ok"))

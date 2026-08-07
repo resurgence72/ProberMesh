@@ -3,10 +3,12 @@ package agent
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
 	"net"
 	"net/rpc"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -21,6 +23,8 @@ type rpcCli struct {
 	retry      int
 
 	cancel context.Context
+
+	mu sync.Mutex
 }
 
 func initRpcCli(ctx context.Context, addr string) *rpcCli {
@@ -36,25 +40,29 @@ func initRpcCli(ctx context.Context, addr string) *rpcCli {
 func (r *rpcCli) Call(sn string, req, resp interface{}) error {
 	var err error
 
-	if cli := r.get(); cli != nil {
-		// retry
-		for i := 1; i < r.retry+1; i++ {
-			err = cli.Call(
-				sn,
-				req,
-				resp,
-			)
-			if err == nil {
-				return nil
-			}
-			time.Sleep(time.Duration(i) * 300 * time.Millisecond)
-		}
-
+	cli := r.get()
+	if cli == nil {
+		err = errors.New("rpc client connect failed")
 		logrus.Errorln("rpc call failed ", sn, err)
-		r.closeCli()
 		return err
 	}
-	return nil
+
+	// retry
+	for i := 1; i < r.retry+1; i++ {
+		err = cli.Call(
+			sn,
+			req,
+			resp,
+		)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(time.Duration(i) * 300 * time.Millisecond)
+	}
+
+	logrus.Errorln("rpc call failed ", sn, err)
+	r.closeCli()
+	return err
 }
 
 func (r *rpcCli) get() *gobrpc.RPCClient {
@@ -66,6 +74,9 @@ func (r *rpcCli) get() *gobrpc.RPCClient {
 }
 
 func (r *rpcCli) getCli() (*gobrpc.RPCClient, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if r.cli != nil {
 		return r.cli, nil
 	}
@@ -99,6 +110,9 @@ func (r *rpcCli) getCli() (*gobrpc.RPCClient, error) {
 }
 
 func (r *rpcCli) closeCli() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
 	if r.cli != nil {
 		r.cli.Close()
 		r.cli = nil

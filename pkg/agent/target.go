@@ -19,14 +19,13 @@ type targetManager struct {
 	targets         map[string][]*config.ProberConfig
 	refreshInterval time.Duration
 	syncInterval    time.Duration
-	currents        map[string]struct{}
 	ptsChan         chan *pb.ProberResultReq
 	selfRegion      string
 	ctx             context.Context
 
 	ready, beforeReady chan struct{}
 
-	m sync.Mutex
+	targetsMu sync.RWMutex
 }
 
 var (
@@ -83,7 +82,11 @@ func (t *targetManager) start() {
 }
 
 func (t *targetManager) prober() {
-	for rgn, tg := range t.targets {
+	t.targetsMu.RLock()
+	targets := t.targets
+	t.targetsMu.RUnlock()
+
+	for rgn, tg := range targets {
 		for _, tt := range tg {
 			pj := &proberJob{
 				proberType:   tt.ProberType,
@@ -94,36 +97,55 @@ func (t *targetManager) prober() {
 				targetRegion: rgn,
 				ch:           t.ptsChan,
 				r:            t.r,
+				ctx:          t.ctx,
 			}
 			go pj.run()
 		}
 	}
 }
 
+// batchSend 单goroutine消费探测结果channel并定时上报，避免共享slice的数据竞争；
+// 上报失败时保留数据下轮重试；队列长度达到上限时丢弃新点并告警，防止内存无限增长
 func (t *targetManager) batchSend() {
+	ticker := time.NewTicker(t.refreshInterval)
+	defer ticker.Stop()
+
+	const maxPoints = 5000
 	var pts []*pb.ProberResultReq
 
-	go func() {
-		for pt := range t.ptsChan {
+	for {
+		select {
+		case pt, ok := <-t.ptsChan:
+			if !ok {
+				return
+			}
+			if len(pts) >= maxPoints {
+				logrus.Warnln("prober report queue is full, drop point")
+				continue
+			}
 			pts = append(pts, pt)
-		}
-	}()
 
-	util.Wait(t.ctx, t.refreshInterval, func() {
-		if len(pts) == 0 {
+		case <-ticker.C:
+			if len(pts) == 0 {
+				continue
+			}
+
+			if err := t.r.Call(
+				"Server.ProberResultReport",
+				pts,
+				nil,
+			); err != nil {
+				logrus.Errorln("prober report failed ", err)
+				// 上报失败，保留数据下轮重试
+				continue
+			}
+
+			pts = pts[:0]
+
+		case <-t.ctx.Done():
 			return
 		}
-
-		if err := t.r.Call(
-			"Server.ProberResultReport",
-			pts,
-			nil,
-		); err != nil {
-			logrus.Errorln("prober report failed ", err)
-		}
-
-		pts = pts[:0]
-	})
+	}
 }
 
 func (t *targetManager) getTargets() {
@@ -149,5 +171,7 @@ func (t *targetManager) getTargets() {
 		msg += fmt.Sprintf("[region == %s]|[targetLens == %d] ", r, batch)
 	}
 	logrus.Debugln("agent get current target list msg: ", msg)
+	t.targetsMu.Lock()
 	t.targets = resp.Targets
+	t.targetsMu.Unlock()
 }

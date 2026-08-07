@@ -47,7 +47,7 @@ func (p *ProberConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 
 	if pc.ProberType == "icmp" && pc.ICMPProbe == nil {
-		pc.ICMPProbe = defaultICMPProbe
+		pc.ICMPProbe = DefaultICMPProbe()
 	}
 
 	if pc.ProberType == "http" && pc.HttpProbe == nil {
@@ -150,9 +150,9 @@ func (i *ICMPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func (hp *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	h := defaultHttpProbe
+	h := *defaultHttpProbe
 	type plain HTTPProbe
-	if err := unmarshal((*plain)(h)); err != nil {
+	if err := unmarshal((*plain)(&h)); err != nil {
 		return err
 	}
 
@@ -178,7 +178,7 @@ func (hp *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		switch textproto.CanonicalMIMEHeaderKey(key) {
 		case "Accept-Encoding":
 			if !isCompressionAcceptEncodingValid(h.Compression, value) {
-				return fmt.Errorf(`invalid configuration "%h: %h", "compression: %h"`, key, value, h.Compression)
+				return fmt.Errorf(`invalid configuration "%q: %q", "compression: %q"`, key, value, h.Compression)
 			}
 		}
 	}
@@ -187,8 +187,14 @@ func (hp *HTTPProbe) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		h.IPProtocol = defaultHttpProbe.IPProtocol
 	}
 
-	*hp = *h
+	*hp = h
 	return nil
+}
+
+// DefaultICMPProbe 返回默认ICMP探测配置的拷贝，防止共享全局默认值被修改
+func DefaultICMPProbe() *ICMPProbe {
+	p := *defaultICMPProbe
+	return &p
 }
 
 func isCompressionAcceptEncodingValid(encoding, acceptEncoding string) bool {

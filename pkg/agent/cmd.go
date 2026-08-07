@@ -12,8 +12,12 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const maxTaskOutputSize = 64 * 1024
+
 func taskRun(cmd string, ident string, cli *rpcCli) {
-	ctx, _ := context.WithTimeout(context.TODO(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
+	defer cancel()
+
 	c := exec.CommandContext(ctx, "/bin/bash", "-c", cmd, " 2>&1")
 
 	var (
@@ -39,18 +43,28 @@ func taskRun(cmd string, ident string, cli *rpcCli) {
 		return
 	}
 
-	c.Start()
+	if err := c.Start(); err != nil {
+		output = err.Error()
+		return
+	}
+
 	reader := bufio.NewReader(outReader)
 	for {
 		readString, err := reader.ReadString('\n')
+		if len(output) < maxTaskOutputSize {
+			output += readString
+			if len(output) > maxTaskOutputSize {
+				output = output[:maxTaskOutputSize] + "\n...[output truncated]"
+			}
+		}
 		if err != nil {
 			if err == io.EOF {
-				return
+				break
 			}
 			output = err.Error()
-			return
+			break
 		}
-		output += readString
 	}
-	c.Wait()
+	// 回收子进程，防止僵尸进程
+	_ = c.Wait()
 }

@@ -378,6 +378,11 @@ var (
 //}
 
 func probeICMP(_ context.Context, target string, icmpProbe *config.ICMPProbe, sourceRegion, targetRegion string) *pb.ProberResultReq {
+	if icmpProbe == nil {
+		// 防御：server下发的icmp配置可能缺失，使用默认值
+		icmpProbe = config.DefaultICMPProbe()
+	}
+
 	var (
 		defaultICMPProberResultReq = &pb.ProberResultReq{
 			ProberType:   util.ProbeICMPType,

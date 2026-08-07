@@ -93,8 +93,14 @@ func (tg *TaskGroup) getTask(ident string) string {
 	}
 
 	for k := range tg.tasks.Items() {
-		v, _ := tg.tasks.Get(k)
+		v, ok := tg.tasks.Get(k)
+		if !ok {
+			continue
+		}
 		tr, _ := v.(*pb.TaskReq)
+		if tr == nil {
+			continue
+		}
 
 		if tg.isMatch(ident, tr) {
 			return tr.Cmd
@@ -106,11 +112,11 @@ func (tg *TaskGroup) getTask(ident string) string {
 func (tg *TaskGroup) isMatch(ident string, tr *pb.TaskReq) bool {
 	switch expr(tr.Expr) {
 	case Match:
-		if strings.EqualFold(ident, tr.Expr) {
+		if strings.EqualFold(ident, tr.Region) {
 			return true
 		}
 	case NotMatch:
-		if !strings.EqualFold(ident, tr.Expr) {
+		if !strings.EqualFold(ident, tr.Region) {
 			return true
 		}
 	case RegexMatch:

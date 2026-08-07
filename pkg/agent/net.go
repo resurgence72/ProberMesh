@@ -62,7 +62,9 @@ func getIntranetIP() string {
 }
 
 func getPublicIP() string {
-	ctx, _ := context.WithTimeout(context.TODO(), regionTimeout)
+	ctx, cancel := context.WithTimeout(context.TODO(), regionTimeout)
+	defer cancel()
+
 	cmd := exec.CommandContext(
 		ctx,
 		"bash",
@@ -102,7 +104,10 @@ func getSelfRegion(dr string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), regionTimeout)
 	defer cancel()
 
-	resultCn := make(chan string, 1)
+	// channel容量与下方pipeLines(6个云厂商)数量一致，所有send不阻塞；
+	// 且不能close，否则慢响应goroutine向已关闭channel发送会panic
+	resultCn := make(chan string, 6)
+
 	f := func(r string) (string, error) {
 		cmd := exec.CommandContext(
 			ctx,
@@ -169,6 +174,5 @@ func getSelfRegion(dr string) string {
 		logrus.Warnln("get region timeout, use default region: [cn-shanghai]")
 	}
 
-	close(resultCn)
 	return region
 }
